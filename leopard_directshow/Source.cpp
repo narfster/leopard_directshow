@@ -1,32 +1,21 @@
-#include <Dshow.h>
-#include "qedit.h"
+
 #include "opencv2/opencv.hpp"
 #include "util_image.h"
 #include "util_uvc_ext.h"
 #include <thread>
+#include "dshow_graph.h"
+#include <conio.h>
 
+#define RAW_IMAGE_SIZE (640 * 480 * 2)
 
-//capture filter -> grabber filter -> null filter
-IBaseFilter *pCapFilter = NULL;			//filter to capture video input from webcam.
-IBaseFilter *pGrabberFilter = NULL;		//filter to sample grabber video stream.
-IBaseFilter *pNullFilter = NULL;		//filter to output grabber filter.
-
-//Pointers to COM Interfaces.
-IGraphBuilder *pGraphInterface = NULL;				    //a graph builder object
-ICaptureGraphBuilder2 *pCaptureGraphInterface = NULL;	//Capture graph builder object
-IMediaControl *pControlInterface = NULL;				//control interface
-IMediaEvent   *pEventInterface = NULL;					//event interface
-IAMStreamConfig *pStreamConfigInterface = NULL;			//stream config interface
-ISampleGrabber *pGrabberInterface = NULL;				//grabber interface.
-
-GUID CAPTURE_MODE;
 
 //Image buffers:
 uint8_t buffRGB[921600] = { 0 };
 uint8_t rawBuff[921600] = { 0 };
 
-void display_debug_blocking()
+void display_debug_blocking(uint8_t *p_rawImage, uint32_t buffLength)
 {
+	memcpy(rawBuff, p_rawImage, buffLength);
 
 	////test display from this thread.
 	util_image::gammaCorrection(rawBuff, rawBuff, 640, 480, 10, 1.6);
@@ -39,210 +28,14 @@ void display_debug_blocking()
 	cv::waitKey(1);
 }
 
-//////////////////////////////  CALLBACK  ////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-//Callback class
-class SampleGrabberCallback : public ISampleGrabberCB {
-public:
-
-	//------------------------------------------------
-	SampleGrabberCallback() {
-		InitializeCriticalSection(&critSection);
-		freezeCheck = 0;
-
-
-		bufferSetup = false;
-		newFrame = false;
-		latestBufferLength = 0;
-
-		hEvent = CreateEvent(NULL, true, false, NULL);
-	}
-
-
-	//------------------------------------------------
-	~SampleGrabberCallback() {
-		ptrBuffer = NULL;
-		DeleteCriticalSection(&critSection);
-		CloseHandle(hEvent);
-		if (bufferSetup) {
-			delete[] pixels;
-		}
-	}
-
-
-	//------------------------------------------------
-	bool setupBuffer(int numBytesIn) {
-		if (bufferSetup) {
-			return false;
-		}
-		else {
-			numBytes = numBytesIn;
-			pixels = new unsigned char[numBytes];
-			bufferSetup = true;
-			newFrame = false;
-			latestBufferLength = 0;
-		}
-		return true;
-	}
-
-
-	//------------------------------------------------
-	STDMETHODIMP_(ULONG) AddRef() { return 1; }
-	STDMETHODIMP_(ULONG) Release() { return 2; }
-
-
-	//------------------------------------------------
-	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject) {
-		*ppvObject = static_cast<ISampleGrabberCB*>(this);
-		return S_OK;
-	}
-
-
-	//This method is meant to have less overhead
-	//------------------------------------------------
-	STDMETHODIMP SampleCB(double Time, IMediaSample *pSample) {
-		if (WaitForSingleObject(hEvent, 0) == WAIT_OBJECT_0) return S_OK;
-
-		HRESULT hr = pSample->GetPointer(&ptrBuffer);
-
-		if (hr == S_OK) {
-			latestBufferLength = pSample->GetActualDataLength();
-			// Leon if(latestBufferLength == numBytes){
-			if (1) { // don't check the buffer size, RAW doesn't match
-				EnterCriticalSection(&critSection);
-				memcpy(pixels, ptrBuffer, latestBufferLength);
-				newFrame = true;
-				freezeCheck = 1;
-				LeaveCriticalSection(&critSection);
-				SetEvent(hEvent);
-			}
-			else {
-				printf("ERROR: SampleCB() - buffer sizes do not match\n");
-			}
-		}
-
-		return S_OK;
-	}
-
-
-	//This method is meant to have more overhead
-	STDMETHODIMP BufferCB(double Time, BYTE *pBuffer, long BufferLen) {
-
-		memcpy(rawBuff, pBuffer, 640 * 480 * 2);
-		display_debug_blocking();
-
-		return E_NOTIMPL;
-	}
-
-	int freezeCheck;
-
-	int latestBufferLength;
-	int numBytes;
-	bool newFrame;
-	bool bufferSetup;
-	unsigned char * pixels;
-	unsigned char * ptrBuffer;
-	CRITICAL_SECTION critSection;
-	HANDLE hEvent;
-};
-
-SampleGrabberCallback * sgCallback;
-
-
-HRESULT EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum)
+void thread1_func(dshow_graph dshowGraphFilter)
 {
-	// Create the System Device Enumerator.
-	ICreateDevEnum *pDevEnum;
-	HRESULT hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL,
-		CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pDevEnum));
-
-	if (SUCCEEDED(hr))
-	{
-		// Create an enumerator for the category.
-		hr = pDevEnum->CreateClassEnumerator(category, ppEnum, 0);
-		if (hr == S_FALSE)
-		{
-			hr = VFW_E_NOT_FOUND;  // The category is empty. Treat as an error.
-		}
-		pDevEnum->Release();
-	}
-	return hr;
-}
-
-void DisplayDeviceInformation(IEnumMoniker *pEnum)
-{
-	IMoniker *pMoniker = NULL;
-
-	while (pEnum->Next(1, &pMoniker, NULL) == S_OK)
-	{
-		IPropertyBag *pPropBag;
-		HRESULT hr = pMoniker->BindToStorage(0, 0, IID_PPV_ARGS(&pPropBag));
-		if (FAILED(hr))
-		{
-			pMoniker->Release();
-			continue;
-		}
-
-		VARIANT var;
-		VariantInit(&var);
-
-		// Get description or friendly name.
-		hr = pPropBag->Read(L"Description", &var, 0);
-		if (FAILED(hr))
-		{
-			hr = pPropBag->Read(L"FriendlyName", &var, 0);
-		}
-		if (SUCCEEDED(hr))
-		{
-			char tmp[10];
-			memcpy(tmp, var.bstrVal, 7);
-			if (memcmp(var.bstrVal, "M", 1) == 0)
-			{
-
-				hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void**)&pCapFilter);
-				if (SUCCEEDED(hr))
-				{
-					//hr = m_pGraph->AddFilter(pCapFilter, L"Capture Filter");
-				}
-			}
-			printf("%S\n", var.bstrVal);
-			VariantClear(&var);
-		}
-
-		hr = pPropBag->Write(L"FriendlyName", &var);
-
-		// WaveInID applies only to audio capture devices.
-		hr = pPropBag->Read(L"WaveInID", &var, 0);
-		if (SUCCEEDED(hr))
-		{
-			printf("WaveIn ID: %d\n", var.lVal);
-			VariantClear(&var);
-		}
-
-		hr = pPropBag->Read(L"DevicePath", &var, 0);
-		if (SUCCEEDED(hr))
-		{
-			// The device path is not intended for display.
-			printf("Device path: %S\n", var.bstrVal);
-			VariantClear(&var);
-		}
-
-		pPropBag->Release();
-		pMoniker->Release();
-	}
-}
-
-
-
-
-
-
-#include <conio.h>
-
-int exposure = 100;
-
-void thread1_func()
-{
+	int exposure = 100;
+	auto pCapFilter = dshowGraphFilter.getCapFilter();
 
 	while (true)
 	{
@@ -300,182 +93,25 @@ void thread1_func()
 
 		}
 
-
-
 	}
 
 }
 
-//   
-//	|---------|		  |---------|      |---------|
-//	| capture |		  |filter	|      | NULL    |
-//	| filter  | ----> | Sample  | ---> | filter  |
-//	|		  |		  | Grabber |      |         |
-//	|---------|		  |---------|      |---------|
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void main()
 {
+	auto dshowGraphFilter = dshow_graph(display_debug_blocking);
 
-	// COM stuff //
+	dshowGraphFilter.setup_graph();
 
-	//Initializes the COM library for use by the calling thread, sets the thread's concurrency model, 
-	//and creates a new apartment for the thread if one is required.
-	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-	if (FAILED(hr))
-	{
-		printf("ERROR: CoInitializeEx");
-	}
+	//startup thread for controling capture
+	std::thread t1(thread1_func, dshowGraphFilter);
 
-	// CREATE THE CAPTURE GRAPH BUILDER //
-	hr = CoCreateInstance(CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void **)&pCaptureGraphInterface);
-	if (FAILED(hr))	
-	{
-		printf("ERROR: CoCreateInstance");
-	}
-
-	// CREATE THE REGULAR GRAPH BUILDER //
-	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void **)&pGraphInterface);
-	if (FAILED(hr))
-	{
-		printf("ERROR: CoCreateInstance");
-	}
-
-	//SET THE FILTERGRAPH//
-	hr = pCaptureGraphInterface->SetFiltergraph(pGraphInterface); //specifies a filter graph for the capture graph builder to use.
-	if (FAILED(hr))
-	{
-		printf("ERROR: pCaptureGraphInterface->SetFiltergraph");
-	}
-
-	//Retrieves pointers to the supported interfaces on an object.
-	hr = pGraphInterface->QueryInterface(IID_IMediaControl, (void **)&pControlInterface);  //the interface provides methods for controlling the flow of data through the filter graph.
-	if (FAILED(hr))
-	{
-		printf("ERROR: QueryInterface(IID_IMediaControl");
-	}
-	hr = pGraphInterface->QueryInterface(IID_IMediaEvent, (void **)&pEventInterface);		 //the interface contains methods for retrieving event 
-																		 //notifications and for overriding the Filter Graph Manager's default handling of events. 
-	if (FAILED(hr))
-	{
-		printf("ERROR: QueryInterface(IID_IMediaEvent");
-	}
-
-
-	//FIND VIDEO DEVICE AND ADD TO GRAPH//
-	IEnumMoniker *pEnum;
-	hr = EnumerateDevices(CLSID_VideoInputDeviceCategory, &pEnum);
-	if (SUCCEEDED(hr))
-	{
-		DisplayDeviceInformation(pEnum);
-		pEnum->Release();
-	}
-
-	hr = pGraphInterface->AddFilter(pCapFilter, L"Capture Filter");
-	if (FAILED(hr))
-	{
-		printf("ERROR: AddSourceFilter");
-	}
-
-
-	CAPTURE_MODE = PIN_CATEGORY_CAPTURE;
-	//we do this because webcams don't have a preview mode
-	hr = pCaptureGraphInterface->FindInterface(&CAPTURE_MODE, &MEDIATYPE_Video, pCapFilter, IID_IAMStreamConfig, (void **)&pStreamConfigInterface);
-	if (FAILED(hr)) {
-		printf("ERROR: AddSourceFilter");
-	}
-
-	// CREATE SAMPLE GRABBER FILTER
-	hr = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pGrabberFilter));
-	if (FAILED(hr))
-	{
-		printf("ERROR: AddSourceFilter");
-	}
-
-	hr = pGraphInterface->AddFilter(pGrabberFilter, L"Sample Grabber");
-	if (FAILED(hr))
-	{
-		printf("ERROR: AddSourceFilter");
-	}
-
-	hr = pGrabberFilter->QueryInterface(IID_ISampleGrabber, (void**)&pGrabberInterface);
-	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
-	}
-
-
-	//Set Params - One Shot should be false unless you want to capture just one buffer
-	hr = pGrabberInterface->SetOneShot(FALSE);
-	if (FAILED(hr)) {
-		printf("ERROR: SetOneShot");
-	}
-
-	pGrabberInterface->SetBufferSamples(FALSE);
-	if (FAILED(hr)) {
-		printf("ERROR: SetBufferSamples");
-	}
-
-
-	//Tell the grabber to use our callback function 
-	//We use SampleCB
-	sgCallback = new SampleGrabberCallback();
-	sgCallback->newFrame = false;
-	sgCallback->setupBuffer(640 * 480 * 2);
-	pGrabberInterface->SetCallback(sgCallback, 1);//- 0 is for SampleCB and 1 for BufferCB
-	if (FAILED(hr)) {
-		printf("ERROR: SetCallback");
-	}
-	else {
-		printf("SETUP: Capture callback set\n");
-	}
-
-
-
-	//NULL RENDERER//
-	//used to give the video stream somewhere to go to.
-	hr = CoCreateInstance(CLSID_NullRenderer, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)(&pNullFilter));
-	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
-	}
-
-	hr = pGraphInterface->AddFilter(pNullFilter, L"NullRenderer");
-	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
-	}
-
-
-	//RENDER STREAM//
-	//This is where the stream gets put together.
-	hr = pCaptureGraphInterface->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, pCapFilter, pGrabberFilter, pNullFilter);
-
-	if (FAILED(hr)) {
-		printf("ERROR: RenderStream");
-	}
-
-	BYTE p_data[2];
-	p_data[0] = (BYTE)(exposure);
-	p_data[1] = (BYTE)(exposure >> 8);
-
-	ULONG p_result[10] = { 0 };
-	util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
-
-	//startup thread
-	std::thread t1(thread1_func);
-
-
-	hr = pControlInterface->Run();
-	if (FAILED(hr)) {
-		printf("ERROR: run");
-	}
-	else
-	{
-		long evCode;
-		pEventInterface->WaitForCompletion(INFINITE, &evCode);
-	}
-
-
-
-	CoUninitialize();
-
+	dshowGraphFilter.run_graph();
 
 	t1.join();
 

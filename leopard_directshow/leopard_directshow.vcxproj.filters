@@ -24,6 +24,12 @@
     <ClCompile Include="util_uvc_ext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SampleGrabberCallback.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dshow_graph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="qedit.h">
@@ -33,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="util_uvc_ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dshow_graph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
