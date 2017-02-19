@@ -16,24 +16,23 @@ DEFINE_GUID(GUID_EXTENSION_UNIT_DESCRIPTOR,
 	0x78e321e1, 0xc8ac, 0x40a5, 0x8a, 0xc9, 0x75, 0xa2, 0xa0, 0x2c, 0x74, 0xfb);
 
 
-IGraphBuilder *pGraph = NULL;			//a graph builder object
-ICaptureGraphBuilder2 *pCaptureGraph;	//Capture graph builder object
 
+//capture filter -> grabber filter -> null filter
+IBaseFilter *pCapFilter = NULL;			//filter to capture video input from webcam.
+IBaseFilter *pGrabberFilter = NULL;		//filter to sample grabber video stream.
+IBaseFilter *pNullFilter = NULL;		//filter to output grabber filter.
 
-IBaseFilter *pCap = NULL;				//filter to capture video input from webcam.
-IBaseFilter *pGrabberF = NULL;
-IBaseFilter * pDestFilter;
-
-IMediaControl *pControl = NULL;
-IMediaEvent   *pEvent = NULL;
-IAMStreamConfig *pStreamConf;
-
-
-ISampleGrabber *pGrabber = NULL;
-
+//Pointers to COM Interfaces.
+IGraphBuilder *pGraphInterface = NULL;				    //a graph builder object
+ICaptureGraphBuilder2 *pCaptureGraphInterface = NULL;	//Capture graph builder object
+IMediaControl *pControlInterface = NULL;				//control interface
+IMediaEvent   *pEventInterface = NULL;					//event interface
+IAMStreamConfig *pStreamConfigInterface = NULL;			//stream config interface
+ISampleGrabber *pGrabberInterface = NULL;				//grabber interface.
 
 GUID CAPTURE_MODE;
 
+//Image buffers:
 uint8_t buffRGB[921600] = { 0 };
 uint8_t rawBuff[921600] = { 0 };
 
@@ -211,10 +210,10 @@ void DisplayDeviceInformation(IEnumMoniker *pEnum)
 			if (memcmp(var.bstrVal, "M", 1) == 0)
 			{
 
-				hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void**)&pCap);
+				hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void**)&pCapFilter);
 				if (SUCCEEDED(hr))
 				{
-					//hr = m_pGraph->AddFilter(pCap, L"Capture Filter");
+					//hr = m_pGraph->AddFilter(pCapFilter, L"Capture Filter");
 				}
 			}
 			printf("%S\n", var.bstrVal);
@@ -352,7 +351,7 @@ void thread1_func()
 				p_data[1] = (BYTE)(exposure >> 8);
 
 				ULONG p_result[10] = { 0 };
-				write_to_uvc_extension(pCap, 0x06, p_data, 2, p_result);
+				write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
 				std::cout << exposure << std::endl;
 			}
 			if (key_code == '-')
@@ -363,7 +362,7 @@ void thread1_func()
 				p_data[1] = (BYTE)(exposure >> 8);
 
 				ULONG p_result[10] = { 0 };
-				write_to_uvc_extension(pCap, 0x06, p_data, 2, p_result);
+				write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
 				std::cout << exposure << std::endl;
 			}
 			if (key_code == 't')
@@ -373,7 +372,7 @@ void thread1_func()
 				p_data[1] = (BYTE)(0x00);
 
 				ULONG p_result[10] = { 0 };
-				write_to_uvc_extension(pCap, 0x0b, p_data, 2, p_result);
+				write_to_uvc_extension(pCapFilter, 0x0b, p_data, 2, p_result);
 				std::cout << "trigger enabled" << std::endl;
 			}
 			if (key_code == 'r')
@@ -383,7 +382,7 @@ void thread1_func()
 				p_data[1] = (BYTE)(0x00);
 
 				ULONG p_result[10] = { 0 };
-				write_to_uvc_extension(pCap, 0x0b, p_data, 2, p_result);
+				write_to_uvc_extension(pCapFilter, 0x0b, p_data, 2, p_result);
 				std::cout << "trigger disabled" << std::endl;
 			}
 
@@ -420,33 +419,33 @@ void main()
 	}
 
 	// CREATE THE CAPTURE GRAPH BUILDER //
-	hr = CoCreateInstance(CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void **)&pCaptureGraph);
+	hr = CoCreateInstance(CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void **)&pCaptureGraphInterface);
 	if (FAILED(hr))	
 	{
 		printf("ERROR: CoCreateInstance");
 	}
 
 	// CREATE THE REGULAR GRAPH BUILDER //
-	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void **)&pGraph);
+	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void **)&pGraphInterface);
 	if (FAILED(hr))
 	{
 		printf("ERROR: CoCreateInstance");
 	}
 
 	//SET THE FILTERGRAPH//
-	hr = pCaptureGraph->SetFiltergraph(pGraph); //specifies a filter graph for the capture graph builder to use.
+	hr = pCaptureGraphInterface->SetFiltergraph(pGraphInterface); //specifies a filter graph for the capture graph builder to use.
 	if (FAILED(hr))
 	{
-		printf("ERROR: pCaptureGraph->SetFiltergraph");
+		printf("ERROR: pCaptureGraphInterface->SetFiltergraph");
 	}
 
 	//Retrieves pointers to the supported interfaces on an object.
-	hr = pGraph->QueryInterface(IID_IMediaControl, (void **)&pControl);  //the interface provides methods for controlling the flow of data through the filter graph.
+	hr = pGraphInterface->QueryInterface(IID_IMediaControl, (void **)&pControlInterface);  //the interface provides methods for controlling the flow of data through the filter graph.
 	if (FAILED(hr))
 	{
 		printf("ERROR: QueryInterface(IID_IMediaControl");
 	}
-	hr = pGraph->QueryInterface(IID_IMediaEvent, (void **)&pEvent);		 //the interface contains methods for retrieving event 
+	hr = pGraphInterface->QueryInterface(IID_IMediaEvent, (void **)&pEventInterface);		 //the interface contains methods for retrieving event 
 																		 //notifications and for overriding the Filter Graph Manager's default handling of events. 
 	if (FAILED(hr))
 	{
@@ -463,7 +462,7 @@ void main()
 		pEnum->Release();
 	}
 
-	hr = pGraph->AddFilter(pCap, L"Capture Filter");
+	hr = pGraphInterface->AddFilter(pCapFilter, L"Capture Filter");
 	if (FAILED(hr))
 	{
 		printf("ERROR: AddSourceFilter");
@@ -472,38 +471,37 @@ void main()
 
 	CAPTURE_MODE = PIN_CATEGORY_CAPTURE;
 	//we do this because webcams don't have a preview mode
-	hr = pCaptureGraph->FindInterface(&CAPTURE_MODE, &MEDIATYPE_Video, pCap, IID_IAMStreamConfig, (void **)&pStreamConf);
+	hr = pCaptureGraphInterface->FindInterface(&CAPTURE_MODE, &MEDIATYPE_Video, pCapFilter, IID_IAMStreamConfig, (void **)&pStreamConfigInterface);
 	if (FAILED(hr)) {
 		printf("ERROR: AddSourceFilter");
 	}
 
-	// SAMPLE GRABBER!
-
-	hr = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pGrabberF));
+	// CREATE SAMPLE GRABBER FILTER
+	hr = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pGrabberFilter));
 	if (FAILED(hr))
 	{
 		printf("ERROR: AddSourceFilter");
 	}
 
-	hr = pGraph->AddFilter(pGrabberF, L"Sample Grabber");
+	hr = pGraphInterface->AddFilter(pGrabberFilter, L"Sample Grabber");
 	if (FAILED(hr))
 	{
 		printf("ERROR: AddSourceFilter");
 	}
 
-	hr = pGrabberF->QueryInterface(IID_ISampleGrabber, (void**)&pGrabber);
+	hr = pGrabberFilter->QueryInterface(IID_ISampleGrabber, (void**)&pGrabberInterface);
 	if (FAILED(hr)) {
 		printf("ERROR: QueryInterface");
 	}
 
 
 	//Set Params - One Shot should be false unless you want to capture just one buffer
-	hr = pGrabber->SetOneShot(FALSE);
+	hr = pGrabberInterface->SetOneShot(FALSE);
 	if (FAILED(hr)) {
 		printf("ERROR: SetOneShot");
 	}
 
-	pGrabber->SetBufferSamples(FALSE);
+	pGrabberInterface->SetBufferSamples(FALSE);
 	if (FAILED(hr)) {
 		printf("ERROR: SetBufferSamples");
 	}
@@ -514,7 +512,7 @@ void main()
 	sgCallback = new SampleGrabberCallback();
 	sgCallback->newFrame = false;
 	sgCallback->setupBuffer(640 * 480 * 2);
-	pGrabber->SetCallback(sgCallback, 1);//- 0 is for SampleCB and 1 for BufferCB
+	pGrabberInterface->SetCallback(sgCallback, 1);//- 0 is for SampleCB and 1 for BufferCB
 	if (FAILED(hr)) {
 		printf("ERROR: SetCallback");
 	}
@@ -526,12 +524,12 @@ void main()
 
 	//NULL RENDERER//
 	//used to give the video stream somewhere to go to.
-	hr = CoCreateInstance(CLSID_NullRenderer, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)(&pDestFilter));
+	hr = CoCreateInstance(CLSID_NullRenderer, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)(&pNullFilter));
 	if (FAILED(hr)) {
 		printf("ERROR: QueryInterface");
 	}
 
-	hr = pGraph->AddFilter(pDestFilter, L"NullRenderer");
+	hr = pGraphInterface->AddFilter(pNullFilter, L"NullRenderer");
 	if (FAILED(hr)) {
 		printf("ERROR: QueryInterface");
 	}
@@ -539,10 +537,10 @@ void main()
 
 	//RENDER STREAM//
 	//This is where the stream gets put together.
-	hr = pCaptureGraph->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, pCap, pGrabberF, pDestFilter);
+	hr = pCaptureGraphInterface->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, pCapFilter, pGrabberFilter, pNullFilter);
 
 	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
+		printf("ERROR: RenderStream");
 	}
 
 	BYTE p_data[2];
@@ -550,20 +548,20 @@ void main()
 	p_data[1] = (BYTE)(exposure >> 8);
 
 	ULONG p_result[10] = { 0 };
-	write_to_uvc_extension(pCap, 0x06, p_data, 2, p_result);
+	write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
 
 	//startup thread
 	std::thread t1(thread1_func);
 
 
-	hr = pControl->Run();
+	hr = pControlInterface->Run();
 	if (FAILED(hr)) {
 		printf("ERROR: run");
 	}
 	else
 	{
 		long evCode;
-		pEvent->WaitForCompletion(INFINITE, &evCode);
+		pEventInterface->WaitForCompletion(INFINITE, &evCode);
 	}
 
 
