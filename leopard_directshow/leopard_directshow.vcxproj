@@ -154,10 +154,12 @@
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="util_image.cpp" />
+    <ClCompile Include="util_uvc_ext.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="qedit.h" />
     <ClInclude Include="util_image.h" />
+    <ClInclude Include="util_uvc_ext.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
