@@ -17,7 +17,7 @@ namespace util_image
 	static double gammaValue = -1;
 	static int gBPP = 0;
 
-    void raw_to_rgb(const void* inBuff, int inBuffSize, const void* outBuff, int outBuffSize);
+    void raw_to_rgb(void* inBuff, int inBuffSize, void* outBuff, int outBuffSize, uint32_t numOfPixels, int bitPerPixel);
 
 	// create gamma table
     void initGammaTable(double gamma, int bpp);

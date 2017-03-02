@@ -6,22 +6,32 @@
 #include "dshow_graph.h"
 #include <conio.h>
 
-#define RAW_IMAGE_SIZE (640 * 480 * 2)
+//VGA
+#define RAW_IMAGE_SIZE_VGA (640 * 480 * 2)
+//720p
+#define RAW_IMAGE_SIZE_720p_PIX (1280 * 720)
+#define RAW_IMAGE_SIZE_720p_RAW (RAW_IMAGE_SIZE_720p_PIX* 2)
+#define RAW_IMAGE_SIZE_720p_RGB (RAW_IMAGE_SIZE_720p_PIX * 3)
+//5MP
+#define RAW_IMAGE_SIZE_5MP_PIX (2592 * 1944)
+#define RAW_IMAGE_SIZE_5MP_RAW (RAW_IMAGE_SIZE_720p_PIX * 2)
+#define RAW_IMAGE_SIZE_5MP_RGB (RAW_IMAGE_SIZE_720p_RGB * 3)
 
 
 //Image buffers:
-uint8_t buffRGB[921600] = { 0 };
-uint8_t rawBuff[921600] = { 0 };
+uint8_t buffRGB[RAW_IMAGE_SIZE_720p_PIX] = { 0 };
+uint8_t rawBuff[RAW_IMAGE_SIZE_720p_PIX] = { 0 };
 
 void display_debug_blocking(uint8_t *p_rawImage, uint32_t buffLength)
 {
 	memcpy(rawBuff, p_rawImage, buffLength);
 
 	////test display from this thread.
-	util_image::gammaCorrection(rawBuff, rawBuff, 640, 480, 10, 1.6);
-	util_image::raw_to_rgb(rawBuff, 0, buffRGB, 0);
+	//util_image::gammaCorrection(rawBuff, rawBuff, 1280, 720, 12, 1.6);
+	
+	util_image::raw_to_rgb(rawBuff, 0, buffRGB, 0, RAW_IMAGE_SIZE_720p_PIX, 12);
 
-	cv::Mat image(480, 640, CV_8UC3, buffRGB);
+	cv::Mat image(720, 1280, CV_8UC3, buffRGB);
 
 
 	cv::imshow("Debug blocking display", image);

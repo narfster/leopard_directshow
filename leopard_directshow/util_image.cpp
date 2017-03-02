@@ -3,21 +3,23 @@
 #include <cstdint>
 
 
-////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
-
-    void util_image::raw_to_rgb(const void* inBuff, int inBuffSize, const void* outBuff, int outBuffSize)
+	////////////////////////////////////////////////////////////////////////////////
+	//Tested with 12bit, and 10 bit pixel depth.
+	//fucntion will not work for pixel depth < 8 
+    void util_image::raw_to_rgb (void* inBuff, int inBuffSize, void* outBuff, int outBuffSize, uint32_t numOfPixels, int bitPerPixel)
 	{
 		ushort temp;
 		auto dst = (uchar *)outBuff;
 
+		int shift = bitPerPixel - 8;  //i.e. 10bit - 8bit(1 byte) = 2, 12bit - 8bit = 4
 
 		ushort* tmp = (ushort *)inBuff;
 		uchar c = 0;
-		for (int i = 0; i < 640 * 480; i++)
+		for (int i = 0; i < numOfPixels; i++)
 		{
-			temp = (*tmp++) >> 2;
+			temp = (*tmp++) >> shift; //12 bit shift 4, 10bit shift 2
 			*dst++ = (uchar)temp;
 			*dst++ = (uchar)temp;
 			*dst++ = (uchar)temp;
