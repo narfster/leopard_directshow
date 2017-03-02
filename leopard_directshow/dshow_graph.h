@@ -7,18 +7,27 @@
 class dshow_graph
 {
 public:
+	struct cam_format
+	{
+		uint32_t width;
+		uint32_t height;
+		float fps;
+	};
+
 	dshow_graph();
 	~dshow_graph();
 	void run_graph();
 	void print_camera_cap();
 	void set_camera_format(int capIndex);
 	void setup_graph(std::function<void(uint8_t*, uint32_t)> callback_func);
+	cam_format get_current_format();
 	IBaseFilter* getCapFilter() const;
+
+
 
 private:
 	HRESULT EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum);
 	void DisplayDeviceInformation(IEnumMoniker *pEnum);
-
 	IBaseFilter *pCapFilter = NULL;			//filter to capture video input from webcam.
 	IBaseFilter *pGrabberFilter = NULL;		//filter to sample grabber video stream.
 	IBaseFilter *pNullFilter = NULL;		//filter to output grabber filter.

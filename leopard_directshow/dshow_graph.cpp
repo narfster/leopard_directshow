@@ -108,6 +108,34 @@ void dshow_graph::DisplayDeviceInformation(IEnumMoniker *pEnum)
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+dshow_graph::cam_format dshow_graph::get_current_format()
+{
+	AM_MEDIA_TYPE *pmt;
+	HRESULT hr;
+	cam_format fmt{0};
+
+	hr = pStreamConfigInterface->GetFormat(&pmt);
+	if (hr == S_OK)
+	{
+		if ((pmt->majortype == MEDIATYPE_Video) &&
+			(pmt->formattype == FORMAT_VideoInfo) &&
+			(pmt->cbFormat >= sizeof(VIDEOINFOHEADER)) &&
+			(pmt->pbFormat != NULL))
+		{
+			VIDEOINFOHEADER *pVih = (VIDEOINFOHEADER*)pmt->pbFormat;
+			fmt.fps = 10000000 / pVih->AvgTimePerFrame;
+			fmt.width = pVih->bmiHeader.biWidth;
+			fmt.height = pVih->bmiHeader.biHeight;
+		}
+	}
+
+	return fmt;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -168,9 +196,6 @@ void dshow_graph::print_camera_cap()
 
 				std::cout << " fps: " << fps <<" , " << fps_min << " (min) " << fps_max << " (max)" << std::endl;
 			}
-			
-
-
 		}
 	}
 	//release buffer with capabilites.
