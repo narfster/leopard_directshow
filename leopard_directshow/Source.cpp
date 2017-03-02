@@ -100,7 +100,6 @@ void thread1_func(IVideoIn *video_in)
 
 void main()
 {
-	//auto dshowGraphFilter = dshow_graph();
 	leopard_cam leo_cam;
 
 	leo_cam.setup(display_debug_blocking);
