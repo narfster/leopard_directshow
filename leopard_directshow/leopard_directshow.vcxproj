@@ -166,6 +166,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dshow_graph.h" />
+    <ClInclude Include="IVideoIn.h" />
+    <ClInclude Include="leopard_cam.h" />
     <ClInclude Include="qedit.h" />
     <ClInclude Include="util_image.h" />
     <ClInclude Include="util_uvc_ext.h" />

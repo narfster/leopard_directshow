@@ -44,5 +44,11 @@
     <ClInclude Include="dshow_graph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IVideoIn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="leopard_cam.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

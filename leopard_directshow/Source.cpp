@@ -5,6 +5,7 @@
 #include <thread>
 #include "dshow_graph.h"
 #include <conio.h>
+#include "leopard_cam.h"
 
 //VGA
 #define RAW_IMAGE_SIZE_VGA_PIX (640 * 480)
@@ -21,8 +22,8 @@
 
 
 //Image buffers:
-uint8_t buffRGB[RAW_IMAGE_SIZE_VGA_RGB] = { 0 };
-uint8_t rawBuff[RAW_IMAGE_SIZE_VGA_RGB] = { 0 };
+uint8_t buffRGB[RAW_IMAGE_SIZE_720p_RGB] = { 0 };
+uint8_t rawBuff[RAW_IMAGE_SIZE_720p_RGB] = { 0 };
 
 void display_debug_blocking(uint8_t *p_rawImage, uint32_t buffLength)
 {
@@ -31,9 +32,9 @@ void display_debug_blocking(uint8_t *p_rawImage, uint32_t buffLength)
 	////test display from this thread.
 	//util_image::gammaCorrection(rawBuff, rawBuff, 1280, 720, 12, 1.6);
 	
-	util_image::raw_to_rgb(rawBuff, 0, buffRGB, 0, RAW_IMAGE_SIZE_VGA_PIX, 12);
+	util_image::raw_to_rgb(rawBuff, 0, buffRGB, 0, RAW_IMAGE_SIZE_720p_PIX, 12);
 
-	cv::Mat image(480, 640, CV_8UC3, buffRGB);
+	cv::Mat image(720, 1280, CV_8UC3, buffRGB);
 
 
 	cv::imshow("Debug blocking display", image);
@@ -44,10 +45,10 @@ void display_debug_blocking(uint8_t *p_rawImage, uint32_t buffLength)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void thread1_func(dshow_graph dshowGraphFilter)
+void thread1_func(IVideoIn *video_in)
 {
 	int exposure = 100;
-	auto pCapFilter = dshowGraphFilter.getCapFilter();
+
 
 	while (true)
 	{
@@ -59,50 +60,26 @@ void thread1_func(dshow_graph dshowGraphFilter)
 			if (key_code == '+')
 			{
 				exposure += 100;
-				BYTE p_data[2];
-				p_data[0] = (BYTE)(exposure);
-				p_data[1] = (BYTE)(exposure >> 8);
-
-				ULONG p_result[10] = { 0 };
-				util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
-				std::cout << exposure << std::endl;
+				video_in->set_exposure(exposure);
 			}
 			if (key_code == '-')
 			{
 				exposure -= 100;
-				BYTE p_data[2];
-				p_data[0] = (BYTE)(exposure);
-				p_data[1] = (BYTE)(exposure >> 8);
-
-				ULONG p_result[10] = { 0 };
-				util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
-				std::cout << exposure << std::endl;
+				video_in->set_exposure(exposure);
 			}
 			if (key_code == 't')
 			{
-				BYTE p_data[2];
-				p_data[0] = (BYTE)(0x03);
-				p_data[1] = (BYTE)(0x00);
-
-				ULONG p_result[10] = { 0 };
-				util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x0b, p_data, 2, p_result);
-				std::cout << "trigger enabled" << std::endl;
+				video_in->set_trigger(true);
 			}
 			if (key_code == 'r')
 			{
-				BYTE p_data[2];
-				p_data[0] = (BYTE)(0x00);
-				p_data[1] = (BYTE)(0x00);
-
-				ULONG p_result[10] = { 0 };
-				util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x0b, p_data, 2, p_result);
-				std::cout << "trigger disabled" << std::endl;
+				video_in->set_trigger(false);
 			}
 
 			if (key_code == 'p')
 			{
 				std::cout << "//=============//" << std::endl;
-				dshowGraphFilter.print_camera_cap();
+				video_in->print_camera_cap();
 				std::cout << "//=============//" << std::endl;
 			}
 
@@ -123,14 +100,15 @@ void thread1_func(dshow_graph dshowGraphFilter)
 
 void main()
 {
-	auto dshowGraphFilter = dshow_graph(display_debug_blocking);
+	//auto dshowGraphFilter = dshow_graph();
+	leopard_cam leo_cam;
 
-	dshowGraphFilter.setup_graph();
+	leo_cam.setup(display_debug_blocking);
 
 	//startup thread for controling capture
-	std::thread t1(thread1_func, dshowGraphFilter);
+	std::thread t1(thread1_func, &leo_cam);
 
-	dshowGraphFilter.run_graph();
+	leo_cam.run();
 
 	t1.join();
 

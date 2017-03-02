@@ -11,15 +11,6 @@ dshow_graph::dshow_graph()
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-dshow_graph::dshow_graph(std::function<void(uint8_t*, std::size_t)> callback_func)
-{
-	callback_func_ = callback_func;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
 dshow_graph::~dshow_graph()
 {
 	CoUninitialize();
@@ -222,7 +213,7 @@ void dshow_graph::set_camera_format(int capIndex)
 //	|		  |		  | Grabber |      |         |              |
 //	|---------|		  |---------|      |---------|              |
 //---------------------------------------------------------------
-void dshow_graph::setup_graph()
+void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_func)
 {
 	// COM stuff //
 
@@ -327,7 +318,7 @@ void dshow_graph::setup_graph()
 	//We use SampleCB
 	sgCallback = new SampleGrabberCallback();
 	sgCallback->newFrame = false;
-	sgCallback->setupBuffer(callback_func_);
+	sgCallback->setupBuffer(callback_func);
 	pGrabberInterface->SetCallback(sgCallback, 1);//- 0 is for SampleCB and 1 for BufferCB
 	if (FAILED(hr)) {
 		printf("ERROR: SetCallback");
