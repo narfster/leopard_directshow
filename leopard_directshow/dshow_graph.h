@@ -7,11 +7,13 @@
 class dshow_graph
 {
 public:
-	struct cam_format
+	struct imgFormat
 	{
 		uint32_t width;
 		uint32_t height;
 		float fps;
+		uint32_t frameSize;
+		int bytesPerPixel;
 	};
 
 	dshow_graph();
@@ -20,9 +22,11 @@ public:
 	void print_camera_cap();
 	void set_camera_format(int capIndex);
 	void setup_graph(std::function<void(uint8_t*, uint32_t)> callback_func);
-	cam_format get_current_format();
+	void setup();
+	void render();
+	imgFormat get_image_format() const;
 	IBaseFilter* getCapFilter() const;
-
+	void set_callback(std::function<void(uint8_t*, uint32_t)> function);
 
 
 private:

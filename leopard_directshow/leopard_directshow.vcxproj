@@ -171,6 +171,7 @@
     <ClInclude Include="qedit.h" />
     <ClInclude Include="util_image.h" />
     <ClInclude Include="util_uvc_ext.h" />
+    <ClInclude Include="video_display.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

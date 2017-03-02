@@ -50,5 +50,8 @@
     <ClInclude Include="leopard_cam.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="video_display.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
