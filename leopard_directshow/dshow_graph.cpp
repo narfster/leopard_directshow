@@ -1,5 +1,6 @@
 
 #include "dshow_graph.h"
+#include <iostream>
 
 
 dshow_graph::dshow_graph()
@@ -120,6 +121,98 @@ void dshow_graph::DisplayDeviceInformation(IEnumMoniker *pEnum)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+void dshow_graph::print_camera_cap()
+{
+	int iCount, iSize;
+	BYTE *pSCC = NULL;
+	AM_MEDIA_TYPE *pmt;
+	HRESULT hr;
+
+	hr = pStreamConfigInterface->GetNumberOfCapabilities(&iCount, &iSize);
+
+	//allocate dynamic buff to hold capabilites.
+	pSCC = new BYTE[iSize];
+	if (pSCC == NULL)
+	{
+		// TODO: Out of memory error.
+	}
+
+	//run on all formats.
+	std::cout << "printing capabilites of camera: " << std::endl;
+	for(int i = 0; i< iCount; i++)
+	{
+		hr = pStreamConfigInterface->GetStreamCaps(i, &pmt, pSCC);
+		if (hr == S_OK)
+		{
+			//reading metrial
+			//subtype defines the media fortmat.. see https://msdn.microsoft.com/en-us/library/windows/desktop/dd757532(v=vs.85).aspx
+			//and also: https://msdn.microsoft.com/en-us/library/windows/desktop/dd387907(v=vs.85).aspx
+			
+			if ((pmt->majortype == MEDIATYPE_Video) &&
+				(pmt->formattype == FORMAT_VideoInfo) &&
+				(pmt->cbFormat >= sizeof(VIDEOINFOHEADER)) &&
+				(pmt->pbFormat != NULL))
+			{
+				//read video header
+				VIDEOINFOHEADER *pVih = (VIDEOINFOHEADER*)pmt->pbFormat;
+				VIDEO_STREAM_CONFIG_CAPS *caps = (VIDEO_STREAM_CONFIG_CAPS *)pSCC;
+
+				float fps = 10000000 / pVih->AvgTimePerFrame;		
+				float fps_min = 10000000 / (caps->MaxFrameInterval); //from units of 100-nanoseconds to frames per second
+				float fps_max = 10000000 / (caps->MinFrameInterval); //from units of 100-nanoseconds to frames per second
+				
+				auto lWidth = pVih->bmiHeader.biWidth;
+				auto lHeight = pVih->bmiHeader.biHeight;
+				auto horizontalStepSize = caps->OutputGranularityX;
+				auto verticalStepSize = caps->OutputGranularityY;
+				
+				std::cout << std::endl;
+				std::cout << i << ") ";
+
+				std::cout << "Resolution: " << lWidth << " x " << lHeight << std::endl;
+				std::cout << " Min Res: " << caps->MinOutputSize.cx << " x " << caps->MinOutputSize.cy << std::endl;
+				std::cout << " Max Res: " << caps->MaxOutputSize.cx << " x " << caps->MaxOutputSize.cy << std::endl;
+				std::cout << " Step size: " << "horizontal " <<horizontalStepSize << " vertical " << verticalStepSize << std::endl;
+
+				std::cout << " fps: " << fps <<" , " << fps_min << " (min) " << fps_max << " (max)" << std::endl;
+			}
+			
+
+
+		}
+	}
+	//release buffer with capabilites.
+	delete[] pSCC;
+}
+
+void dshow_graph::set_camera_format(int capIndex)
+{
+	HRESULT hr;
+	int iCount, iSize;
+	BYTE *pSCC = NULL;
+	AM_MEDIA_TYPE *pmt;
+
+	hr = pStreamConfigInterface->GetNumberOfCapabilities(&iCount, &iSize);
+
+	pSCC = new BYTE[iSize];
+	if (pSCC == NULL)
+	{
+		// TODO: Out of memory error.
+	}
+
+	// Get the first format.
+	hr = pStreamConfigInterface->GetStreamCaps(capIndex, &pmt, pSCC);
+	if (hr == S_OK)
+	{
+		hr = pStreamConfigInterface->SetFormat(pmt);
+		if (FAILED(hr))
+		{
+			// TODO: Error handling.
+		}
+	}
+	delete[] pSCC;
+}
 
 //--------------------------------------------------------------|
 //				                                 capture graph  |
@@ -256,6 +349,8 @@ void dshow_graph::setup_graph()
 	}
 
 
+	set_camera_format(0);
+
 	//RENDER STREAM//
 	//This is where the stream gets put together.
 	hr = pCaptureGraphInterface->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, pCapFilter, pGrabberFilter, pNullFilter);
@@ -263,6 +358,13 @@ void dshow_graph::setup_graph()
 	if (FAILED(hr)) {
 		printf("ERROR: RenderStream");
 	}
+
+
+
+
+
+	
+
 }
 
 
