@@ -6,3 +6,4 @@ I was searching around the web, looking for a simple c++ solution on how to work
 supports:
 - LI-USB30-V034M
 - LI-USB30-M021M
+- LI-USB30-P031M
