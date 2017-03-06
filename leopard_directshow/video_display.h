@@ -34,6 +34,8 @@ public:
 
 	uint32_t buffRawSize_;
 
+	mutable double videoFramesPerSec_ = 0;
+
 	video_display(): iWidth_(0), bytesPerPix_(0), iHeight_(0), bitsPerPix_(0), buffRawSize_(0)
 	{
 	}
@@ -51,6 +53,22 @@ public:
 
 	void display_blocking(uint8_t *p_rawImage, uint32_t buffLength) const
 	{
+
+		//mesaure this function interval.
+		static auto nbFrames = 0;
+		static auto t = static_cast<double>(cv::getTickCount());
+
+		nbFrames++;
+		double elapsedTimeMs = ((static_cast<double>(cv::getTickCount()) - t) / cv::getTickFrequency()) * 1000;
+		if (elapsedTimeMs >= 1000)
+		{
+			videoFramesPerSec_ = elapsedTimeMs / static_cast<double>(nbFrames);
+			nbFrames = 0;
+			t = static_cast<double>(cv::getTickCount());
+		}
+
+
+
 		memcpy(pBuffRaw_, p_rawImage, buffLength);
 
 		////test display from this thread.
@@ -59,6 +77,11 @@ public:
 		util_image::raw_to_rgb(pBuffRaw_, 0, pBuffRGB_, 0, iWidth_*iHeight_, bitsPerPix_);
 
 		cv::Mat image(iHeight_, iWidth_, CV_8UC3, pBuffRGB_);
+
+		std::string str = "fps: " + std::to_string(1 / videoFramesPerSec_ * 1000);
+		cv::putText(image, str, cvPoint(30, 450),
+			cv::FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255, 0, 00), 1, CV_AA);
+
 
 
 		cv::imshow("Debug blocking display", image);
