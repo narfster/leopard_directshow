@@ -44,9 +44,13 @@ HRESULT dshow_graph::EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-
-void dshow_graph::DisplayDeviceInformation(IEnumMoniker *pEnum)
+/*
+ * if device was not found return false
+ */
+bool dshow_graph::DisplayDeviceInformation(IEnumMoniker* pEnum)
 {
+	auto retVal = false;
+
 	IMoniker *pMoniker = NULL;
 
 	while (pEnum->Next(1, &pMoniker, NULL) == S_OK)
@@ -71,17 +75,24 @@ void dshow_graph::DisplayDeviceInformation(IEnumMoniker *pEnum)
 		if (SUCCEEDED(hr))
 		{
 			char tmp[10];
-			memcpy(tmp, var.bstrVal, 7);
-			if (memcmp(var.bstrVal, "M", 1) == 0)
-			{
 
+
+			if (0 == wcscmp(var.bstrVal, L"MT9M021M") || 
+				0 == wcscmp(var.bstrVal, L"MT9V034") || 
+					0 == wcscmp(var.bstrVal, L"MT9P031"))
+			{
 				hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void**)&pCapFilter);
 				if (SUCCEEDED(hr))
 				{
-					//hr = m_pGraph->AddFilter(pCapFilter, L"Capture Filter");
+					std::cout << std::endl << "*********************************** " << std::endl;
+					std::cout << "capture device set: ";
+					printf("%S\n", var.bstrVal);
+					std::cout << "*********************************** " << std::endl << std::endl;
+
+					retVal = true;
 				}
 			}
-			printf("%S\n", var.bstrVal);
+
 			VariantClear(&var);
 		}
 
@@ -106,6 +117,8 @@ void dshow_graph::DisplayDeviceInformation(IEnumMoniker *pEnum)
 		pPropBag->Release();
 		pMoniker->Release();
 	}
+
+	return retVal;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,6 +131,12 @@ dshow_graph::imgFormat dshow_graph::get_image_format() const
 	AM_MEDIA_TYPE *pmt;
 	HRESULT hr;
 	imgFormat fmt{0};
+
+	if(pStreamConfigInterface == nullptr)
+	{
+		std::cout << "ERROR: get_image_format() " << std::endl;
+		return fmt;
+	}
 
 	hr = pStreamConfigInterface->GetFormat(&pmt);
 	if (hr == S_OK)
@@ -211,6 +230,12 @@ void dshow_graph::set_camera_format(int capIndex)
 	BYTE *pSCC = NULL;
 	AM_MEDIA_TYPE *pmt;
 
+	if(pStreamConfigInterface == nullptr)
+	{
+		std::cout << "ERROR: set_camera_format()" << std::endl;
+		return;
+	}
+
 	hr = pStreamConfigInterface->GetNumberOfCapabilities(&iCount, &iSize);
 
 	pSCC = new BYTE[iSize];
@@ -299,7 +324,7 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 	hr = pGraphInterface->AddFilter(pCapFilter, L"Capture Filter");
 	if (FAILED(hr))
 	{
-		printf("ERROR: AddSourceFilter");
+		printf("ERROR: AddSourceFilter\r\n");
 	}
 
 
@@ -307,37 +332,37 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 	//we do this because webcams don't have a preview mode
 	hr = pCaptureGraphInterface->FindInterface(&CAPTURE_MODE, &MEDIATYPE_Video, pCapFilter, IID_IAMStreamConfig, (void **)&pStreamConfigInterface);
 	if (FAILED(hr)) {
-		printf("ERROR: AddSourceFilter");
+		printf("ERROR: AddSourceFilter\r\n");
 	}
 
 	// CREATE SAMPLE GRABBER FILTER
 	hr = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pGrabberFilter));
 	if (FAILED(hr))
 	{
-		printf("ERROR: AddSourceFilter");
+		printf("ERROR: AddSourceFilter\r\n");
 	}
 
 	hr = pGraphInterface->AddFilter(pGrabberFilter, L"Sample Grabber");
 	if (FAILED(hr))
 	{
-		printf("ERROR: AddSourceFilter");
+		printf("ERROR: AddSourceFilter\r\n");
 	}
 
 	hr = pGrabberFilter->QueryInterface(IID_ISampleGrabber, (void**)&pGrabberInterface);
 	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
+		printf("ERROR: QueryInterface\r\n");
 	}
 
 
 	//Set Params - One Shot should be false unless you want to capture just one buffer
 	hr = pGrabberInterface->SetOneShot(FALSE);
 	if (FAILED(hr)) {
-		printf("ERROR: SetOneShot");
+		printf("ERROR: SetOneShot\r\n");
 	}
 
 	pGrabberInterface->SetBufferSamples(FALSE);
 	if (FAILED(hr)) {
-		printf("ERROR: SetBufferSamples");
+		printf("ERROR: SetBufferSamples\r\n");
 	}
 
 
@@ -348,7 +373,7 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 	sgCallback->setupBuffer(callback_func);
 	pGrabberInterface->SetCallback(sgCallback, 1);//- 0 is for SampleCB and 1 for BufferCB
 	if (FAILED(hr)) {
-		printf("ERROR: SetCallback");
+		printf("ERROR: SetCallback\n");
 	}
 	else {
 		printf("SETUP: Capture callback set\n");
@@ -363,7 +388,7 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 
 	hr = pGraphInterface->AddFilter(pNullFilter, L"NullRenderer");
 	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
+		printf("ERROR: QueryInterface\r\n");
 	}
 
 
@@ -374,7 +399,7 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 	hr = pCaptureGraphInterface->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, pCapFilter, pGrabberFilter, pNullFilter);
 
 	if (FAILED(hr)) {
-		printf("ERROR: RenderStream");
+		printf("ERROR: RenderStream\r\n");
 	}
 
 
@@ -384,8 +409,9 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void dshow_graph::setup()
+int dshow_graph::setup()
 {
+	auto retVal = -1;
 	// COM stuff //
 
 	//Initializes the COM library for use by the calling thread, sets the thread's concurrency model, 
@@ -393,41 +419,41 @@ void dshow_graph::setup()
 	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 	if (FAILED(hr))
 	{
-		printf("ERROR: CoInitializeEx");
+		printf("ERROR: CoInitializeEx\r\n");
 	}
 
 	// CREATE THE CAPTURE GRAPH BUILDER //
 	hr = CoCreateInstance(CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void **)&pCaptureGraphInterface);
 	if (FAILED(hr))
 	{
-		printf("ERROR: CoCreateInstance");
+		printf("ERROR: CoCreateInstance\r\n");
 	}
 
 	// CREATE THE REGULAR GRAPH BUILDER //
 	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void **)&pGraphInterface);
 	if (FAILED(hr))
 	{
-		printf("ERROR: CoCreateInstance");
+		printf("ERROR: CoCreateInstance\r\n");
 	}
 
 	//SET THE FILTERGRAPH//
 	hr = pCaptureGraphInterface->SetFiltergraph(pGraphInterface); //specifies a filter graph for the capture graph builder to use.
 	if (FAILED(hr))
 	{
-		printf("ERROR: pCaptureGraphInterface->SetFiltergraph");
+		printf("ERROR: pCaptureGraphInterface->SetFiltergraph\r\n");
 	}
 
 	//Retrieves pointers to the supported interfaces on an object.
 	hr = pGraphInterface->QueryInterface(IID_IMediaControl, (void **)&pControlInterface);  //the interface provides methods for controlling the flow of data through the filter graph.
 	if (FAILED(hr))
 	{
-		printf("ERROR: QueryInterface(IID_IMediaControl");
+		printf("ERROR: QueryInterface(IID_IMediaControl\r\n");
 	}
 	hr = pGraphInterface->QueryInterface(IID_IMediaEvent, (void **)&pEventInterface);		 //the interface contains methods for retrieving event 
 																							 //notifications and for overriding the Filter Graph Manager's default handling of events. 
 	if (FAILED(hr))
 	{
-		printf("ERROR: QueryInterface(IID_IMediaEvent");
+		printf("ERROR: QueryInterface(IID_IMediaEvent\r\n");
 	}
 
 
@@ -436,14 +462,22 @@ void dshow_graph::setup()
 	hr = EnumerateDevices(CLSID_VideoInputDeviceCategory, &pEnum);
 	if (SUCCEEDED(hr))
 	{
-		DisplayDeviceInformation(pEnum);
+		auto foundDevice = DisplayDeviceInformation(pEnum);
 		pEnum->Release();
+
+		if(!foundDevice)
+		{
+			std::cout <<std::endl << "***********************************" << std::endl;
+			std::cout << "ERROR: Not compatiable device found" << std::endl;
+			std::cout << "***********************************" << std::endl << std::endl;
+			retVal = 0;
+		}
 	}
 
 	hr = pGraphInterface->AddFilter(pCapFilter, L"Capture Filter");
 	if (FAILED(hr))
 	{
-		printf("ERROR: AddSourceFilter");
+		printf("ERROR: AddSourceFilter\r\n");
 	}
 
 
@@ -451,37 +485,37 @@ void dshow_graph::setup()
 	//we do this because webcams don't have a preview mode
 	hr = pCaptureGraphInterface->FindInterface(&CAPTURE_MODE, &MEDIATYPE_Video, pCapFilter, IID_IAMStreamConfig, (void **)&pStreamConfigInterface);
 	if (FAILED(hr)) {
-		printf("ERROR: AddSourceFilter");
+		printf("ERROR: AddSourceFilter\r\n");
 	}
 
 	// CREATE SAMPLE GRABBER FILTER
 	hr = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pGrabberFilter));
 	if (FAILED(hr))
 	{
-		printf("ERROR: AddSourceFilter");
+		printf("ERROR: AddSourceFilter\r\n");
 	}
 
 	hr = pGraphInterface->AddFilter(pGrabberFilter, L"Sample Grabber");
 	if (FAILED(hr))
 	{
-		printf("ERROR: AddSourceFilter");
+		printf("ERROR: AddSourceFilter\r\n");
 	}
 
 	hr = pGrabberFilter->QueryInterface(IID_ISampleGrabber, (void**)&pGrabberInterface);
 	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
+		printf("ERROR: QueryInterface\r\n");
 	}
 
 
 	//Set Params - One Shot should be false unless you want to capture just one buffer
 	hr = pGrabberInterface->SetOneShot(FALSE);
 	if (FAILED(hr)) {
-		printf("ERROR: SetOneShot");
+		printf("ERROR: SetOneShot\r\n");
 	}
 
 	pGrabberInterface->SetBufferSamples(FALSE);
 	if (FAILED(hr)) {
-		printf("ERROR: SetBufferSamples");
+		printf("ERROR: SetBufferSamples\r\n");
 	}
 
 
@@ -492,25 +526,25 @@ void dshow_graph::setup()
 	//sgCallback->setupBuffer(nullptr);//get everything ready but don't define callback function yet
 	pGrabberInterface->SetCallback(sgCallback, 1);//- 0 is for SampleCB and 1 for BufferCB
 	if (FAILED(hr)) {
-		printf("ERROR: SetCallback");
+		printf("ERROR: SetCallback\r\n");
 	}
 	else {
-		printf("SETUP: Capture callback set\n");
+		printf("SETUP: Capture callback set\r\n");
 	}
 
 	//NULL RENDERER//
 	//used to give the video stream somewhere to go to.
 	hr = CoCreateInstance(CLSID_NullRenderer, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)(&pNullFilter));
 	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
+		printf("ERROR: QueryInterface\r\n");
 	}
 
 	hr = pGraphInterface->AddFilter(pNullFilter, L"NullRenderer");
 	if (FAILED(hr)) {
-		printf("ERROR: QueryInterface");
+		printf("ERROR: QueryInterface\r\n");
 	}
 
-
+	return retVal;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

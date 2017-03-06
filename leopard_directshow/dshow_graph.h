@@ -22,7 +22,7 @@ public:
 	void print_camera_cap();
 	void set_camera_format(int capIndex);
 	void setup_graph(std::function<void(uint8_t*, uint32_t)> callback_func);
-	void setup();
+	int setup();
 	void render();
 	imgFormat get_image_format() const;
 	IBaseFilter* getCapFilter() const;
@@ -31,7 +31,7 @@ public:
 
 private:
 	HRESULT EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum);
-	void DisplayDeviceInformation(IEnumMoniker *pEnum);
+	bool DisplayDeviceInformation(IEnumMoniker* pEnum);
 	IBaseFilter *pCapFilter = NULL;			//filter to capture video input from webcam.
 	IBaseFilter *pGrabberFilter = NULL;		//filter to sample grabber video stream.
 	IBaseFilter *pNullFilter = NULL;		//filter to output grabber filter.
