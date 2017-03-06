@@ -60,7 +60,7 @@ public:
 
 		errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
 
-		LOG_MSG(trace, "exposrue set to: " << exposureVal);
+		LOG_MSG(trace, "exposrue set to: " << exposureVal << std::endl);
 
 		return errCode;
 	}
@@ -90,11 +90,11 @@ public:
 		errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x0b, p_data, 2, p_result);
 		if(errCode == 0)
 		{
-			LOG_MSG(trace, "camera trigger = " << isEnabled);
+			LOG_MSG(trace, "camera trigger = " << isEnabled << std::endl);
 		}
 		else
 		{
-			LOG_MSG(trace, "ERROR: set camera trigger");
+			LOG_MSG(trace, "ERROR: set camera trigger" << std::endl);
 		}
 		
 		return errCode;
@@ -164,10 +164,19 @@ public:
 		dshow_.set_camera_format(capIndex);
 	}
 
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	
 	int get_device_status() const
 	{
 		return status_;
 	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+
 
 private:
 

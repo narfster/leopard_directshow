@@ -76,7 +76,8 @@ bool dshow_graph::DisplayDeviceInformation(IEnumMoniker* pEnum)
 		{
 			char tmp[10];
 
-
+			//TODO: 1. move this device list somewhere eles
+			//TODO: 2. resolve usgae of device_bits_per_pixel_.
 			if (0 == wcscmp(var.bstrVal, L"MT9M021M") || 
 				0 == wcscmp(var.bstrVal, L"MT9V034") || 
 					0 == wcscmp(var.bstrVal, L"MT9P031"))
@@ -91,6 +92,12 @@ bool dshow_graph::DisplayDeviceInformation(IEnumMoniker* pEnum)
 
 					retVal = true;
 				}
+
+				if(0 == wcscmp(var.bstrVal, L"MT9V034"))
+				{
+					device_bits_per_pixel_ = 10;
+				}
+
 			}
 
 			VariantClear(&var);
@@ -152,6 +159,7 @@ dshow_graph::imgFormat dshow_graph::get_image_format() const
 			fmt.height = pVih->bmiHeader.biHeight;
 			fmt.frameSize = pmt->lSampleSize;
 			fmt.bytesPerPixel = fmt.frameSize / (fmt.width * fmt.height);
+			fmt.bitsPerPixel = device_bits_per_pixel_;
 		}
 	}
 

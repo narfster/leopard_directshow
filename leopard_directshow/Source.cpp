@@ -31,8 +31,9 @@ void thread1_func(IVideoIn *video_in)
 				video_in->set_exposure(exposure);
 			}
 			if (key_code == '-')
-			{
+			{	
 				exposure -= 100;
+				if (exposure < 0) exposure = 0;
 				video_in->set_exposure(exposure);
 			}
 			if (key_code == 't')
@@ -73,7 +74,7 @@ int main()
 
 	leo_cam.set_format(0);
 	auto imgFmt = leo_cam.get_img_format();
-	vdisplay.set_img_format(imgFmt.width, imgFmt.height, imgFmt.bytesPerPixel, 12);
+	vdisplay.set_img_format(imgFmt.width, imgFmt.height, imgFmt.bytesPerPixel, imgFmt.bitsPerPixel);
 	auto func = std::bind(&video_display::display_blocking, &vdisplay, std::placeholders::_1, std::placeholders::_2);
 	leo_cam.set_callback(func);
 

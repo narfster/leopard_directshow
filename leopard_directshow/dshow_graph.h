@@ -14,6 +14,7 @@ public:
 		float fps;
 		uint32_t frameSize;
 		int bytesPerPixel;
+		int bitsPerPixel;
 	};
 
 	dshow_graph();
@@ -49,4 +50,5 @@ private:
 	GUID CAPTURE_MODE;
 
 	std::function<void(uint8_t*, std::size_t)> callback_func_ = nullptr;
+	int device_bits_per_pixel_ = 12;
 };
