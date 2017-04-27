@@ -7,6 +7,11 @@
 #include <iostream>
 #define LOG_MSG(lvl,msg ) std::cout << msg
 
+#define XU_TRIGGER_DELAY_TIME (0x0a)
+#define XU_TRIGGER_MODE		  (0x0b)
+#define XU_SOFT_TRIGGER       (0x09)
+
+
 class leopard_cam : public IVideoIn
 {
 public:
@@ -37,7 +42,7 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	void run()override{ 
+	void run()override{
 	
 		dshow_.render();
 		dshow_.run_graph();
@@ -126,6 +131,30 @@ public:
 	uint32_t get_gain() override
 	{
 		return 0;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+
+	int set_trigger_delay_time_zero() 
+	{
+		int errCode = 0;
+		auto pCapFilter = dshow_.getCapFilter();
+
+		uint8_t p_data[4];
+		p_data[0] = 0;
+		p_data[1] = 0;
+		p_data[2] = 0;
+		p_data[3] = 0;
+
+		ULONG p_result[10] = { 0 };
+
+		errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, XU_TRIGGER_DELAY_TIME, p_data, 4, p_result);
+
+		LOG_MSG(trace, "set_trigger_delay_time_zero " << std::endl);
+
+		return errCode;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////

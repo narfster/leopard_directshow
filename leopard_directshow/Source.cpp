@@ -51,6 +51,12 @@ void thread1_func(IVideoIn *video_in)
 				video_in->print_camera_cap();
 				std::cout << "//=============//" << std::endl;
 			}
+			if (key_code == 'd')
+			{
+				std::cout << "//=============//" << std::endl;
+				video_in->set_trigger_delay_time_zero();
+				std::cout << "//=============//" << std::endl;
+			}
 
 		}
 		else

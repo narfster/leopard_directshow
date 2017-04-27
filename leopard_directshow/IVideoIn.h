@@ -15,5 +15,6 @@ public:
 	virtual uint32_t get_gain() = 0;
 	virtual bool set_trigger(bool isEnabled) = 0;
 	virtual void print_camera_cap() = 0;
+	virtual int set_trigger_delay_time_zero() = 0;
 private:
 };
