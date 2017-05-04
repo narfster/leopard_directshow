@@ -77,6 +77,7 @@ int main()
 	leopard_cam leo_cam;
 	video_display vdisplay;
 
+	//
 
 	leo_cam.set_format(0);
 	auto imgFmt = leo_cam.get_img_format();
