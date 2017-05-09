@@ -1,10 +1,15 @@
-
 #include "dshow_graph.h"
 #include <iostream>
+#include <vector>
 
 
 dshow_graph::dshow_graph()
 {
+	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	if (FAILED(hr))
+	{
+		printf("ERROR: CoInitializeEx\r\n");
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -13,6 +18,32 @@ dshow_graph::dshow_graph()
 
 dshow_graph::~dshow_graph()
 {
+	
+
+	pControlInterface->Stop();	
+	pEventInterface->CancelDefaultHandling(evCode);
+	
+
+	// Enumerate the filters in the graph.
+	IEnumFilters *pEnum = NULL;
+	HRESULT hr = pGraphInterface->EnumFilters(&pEnum);
+	if (SUCCEEDED(hr))
+	{
+		IBaseFilter *pFilter = NULL;
+		while (S_OK == pEnum->Next(1, &pFilter, NULL))
+		{
+			// Remove the filter.
+			pGraphInterface->RemoveFilter(pFilter);
+			// Reset the enumerator.
+			pEnum->Reset();
+			pFilter->Release();
+		}
+		pEnum->Release();
+	}
+
+	pEventInterface->Release();
+	pControlInterface->Release();
+
 	CoUninitialize();
 }
 
@@ -74,13 +105,11 @@ bool dshow_graph::DisplayDeviceInformation(IEnumMoniker* pEnum)
 		}
 		if (SUCCEEDED(hr))
 		{
-			char tmp[10];
+			
 
-			//TODO: 1. move this device list somewhere eles
-			//TODO: 2. resolve usgae of device_bits_per_pixel_.
-			if (0 == wcscmp(var.bstrVal, L"MT9M021M") || 
-				0 == wcscmp(var.bstrVal, L"MT9V034") || 
-					0 == wcscmp(var.bstrVal, L"MT9P031"))
+			//Convert from wstring to BSTR
+			BSTR bs = SysAllocStringLen(selected_device_.name.data(), selected_device_.name.size());
+			if (0 == wcscmp(var.bstrVal, bs))
 			{
 				hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void**)&pCapFilter);
 				if (SUCCEEDED(hr))
@@ -92,12 +121,6 @@ bool dshow_graph::DisplayDeviceInformation(IEnumMoniker* pEnum)
 
 					retVal = true;
 				}
-
-				if(0 == wcscmp(var.bstrVal, L"MT9V034"))
-				{
-					device_bits_per_pixel_ = 10;
-				}
-
 			}
 
 			VariantClear(&var);
@@ -159,7 +182,7 @@ dshow_graph::imgFormat dshow_graph::get_image_format() const
 			fmt.height = pVih->bmiHeader.biHeight;
 			fmt.frameSize = pmt->lSampleSize;
 			fmt.bytesPerPixel = fmt.frameSize / (fmt.width * fmt.height);
-			fmt.bitsPerPixel = device_bits_per_pixel_;
+			fmt.bitsPerPixel = 10; //TODO!!!
 		}
 	}
 
@@ -231,6 +254,10 @@ void dshow_graph::print_camera_cap()
 	delete[] pSCC;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 void dshow_graph::set_camera_format(int capIndex)
 {
 	HRESULT hr;
@@ -264,6 +291,10 @@ void dshow_graph::set_camera_format(int capIndex)
 	}
 	delete[] pSCC;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 //--------------------------------------------------------------|
 //				                                 capture graph  |
@@ -312,8 +343,9 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 	{
 		printf("ERROR: QueryInterface(IID_IMediaControl");
 	}
-	hr = pGraphInterface->QueryInterface(IID_IMediaEvent, (void **)&pEventInterface);		 //the interface contains methods for retrieving event 
-																							 //notifications and for overriding the Filter Graph Manager's default handling of events. 
+
+
+	hr = pGraphInterface->QueryInterface(IID_IMediaEvent, (void **)&pEventInterface);		 //the interface contains methods for retrieving event 																						 //notifications and for overriding the Filter Graph Manager's default handling of events. 
 	if (FAILED(hr))
 	{
 		printf("ERROR: QueryInterface(IID_IMediaEvent");
@@ -417,18 +449,16 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-int dshow_graph::setup()
+int dshow_graph::setup(dshow_graph::device selected)
 {
-	auto retVal = -1;
+	selected_device_ = selected;
+
+	auto retVal = 0;
 	// COM stuff //
 
 	//Initializes the COM library for use by the calling thread, sets the thread's concurrency model, 
 	//and creates a new apartment for the thread if one is required.
-	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-	if (FAILED(hr))
-	{
-		printf("ERROR: CoInitializeEx\r\n");
-	}
+	HRESULT hr;
 
 	// CREATE THE CAPTURE GRAPH BUILDER //
 	hr = CoCreateInstance(CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void **)&pCaptureGraphInterface);
@@ -478,7 +508,7 @@ int dshow_graph::setup()
 			std::cout <<std::endl << "***********************************" << std::endl;
 			std::cout << "ERROR: Not compatiable device found" << std::endl;
 			std::cout << "***********************************" << std::endl << std::endl;
-			retVal = 0;
+			retVal = -1;
 		}
 	}
 
@@ -585,8 +615,8 @@ void dshow_graph::run_graph()
 	}
 	else
 	{
-		long evCode;
-		pEventInterface->WaitForCompletion(INFINITE, &evCode);
+		
+		pEventInterface->WaitForCompletion(INFINITE, &evCode); //used to be INFINITE
 	}
 }
 
@@ -607,4 +637,156 @@ IBaseFilter* dshow_graph::getCapFilter() const
 void dshow_graph::set_callback(std::function<void(uint8_t*, uint32_t)> function)
 {
 	sgCallback->setupBuffer(function);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+bool dshow_graph::set_gain(uint32_t gainVal)
+{
+	HRESULT hr;
+
+	// Query the capture filter for the IAMVideoProcAmp interface.
+	IAMVideoProcAmp *pProcAmp = 0;
+	hr = pCapFilter->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);																				 //notifications and for overriding the Filter Graph Manager's default handling of events. 
+	if (FAILED(hr))
+	{
+		printf("ERROR: QueryInterface(IID_IAMVideoProcAmp");
+		return false;
+	}
+
+	//Specifies the gain adjustment.Zero
+	//is normal.Positive values are brighter and negative values are darker.
+	//The range of values depends on the device.
+	pProcAmp->Set(VideoProcAmp_Gain, gainVal, VideoProcAmp_Flags_Manual);
+
+	long getGainVal = -1;
+	long getFlagsVal = -1;
+	pProcAmp->Get(VideoProcAmp_Gain, &getGainVal, &getFlagsVal);
+
+	if(getGainVal != gainVal && VideoProcAmp_Flags_Manual != getFlagsVal)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+bool dshow_graph::get_gain(long *gainVal)
+{
+	HRESULT hr;
+
+	// Query the capture filter for the IAMVideoProcAmp interface.
+	IAMVideoProcAmp *pProcAmp = 0;
+	//notifications and for overriding the Filter Graph Manager's default handling of events. 
+	hr = pCapFilter->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);	
+	if (FAILED(hr))
+	{
+		printf("ERROR: QueryInterface(IID_IAMVideoProcAmp");
+		return false;
+	}
+
+	long getGainVal = -1;
+	long getFlagsVal = -1;
+	pProcAmp->Get(VideoProcAmp_Gain, &getGainVal, &getFlagsVal);
+
+	*gainVal = getGainVal;
+
+	return true;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+std::vector<dshow_graph::device> dshow_graph::get_device_list()
+{
+	HRESULT hr;
+	std::vector<dshow_graph::device> list; //just an empty list, somthing to return;
+
+	IEnumMoniker *pEnum;
+	hr = EnumerateDevices(CLSID_VideoInputDeviceCategory, &pEnum);
+	if (SUCCEEDED(hr))
+	{
+		return buid_device_list(pEnum);
+	}
+
+	
+	return list;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+std::vector<dshow_graph::device> dshow_graph::buid_device_list(IEnumMoniker* pEnum)
+{
+	auto retVal = false;
+
+	std::vector<dshow_graph::device> deviceList;
+
+	IMoniker *pMoniker = NULL;
+
+	while (pEnum->Next(1, &pMoniker, NULL) == S_OK)
+	{
+		device currentDevice;
+
+		IPropertyBag *pPropBag;
+		HRESULT hr = pMoniker->BindToStorage(0, 0, IID_PPV_ARGS(&pPropBag));
+		if (FAILED(hr))
+		{
+			pMoniker->Release();
+			continue;
+		}
+
+		VARIANT var;
+		VariantInit(&var);
+
+		// Get description or friendly name.
+		hr = pPropBag->Read(L"Description", &var, 0);
+		if (FAILED(hr))
+		{
+			hr = pPropBag->Read(L"FriendlyName", &var, 0);
+		}
+		if (SUCCEEDED(hr))
+		{
+			std::wstring ws(var.bstrVal, SysStringLen(var.bstrVal));
+			currentDevice.name = ws;
+			VariantClear(&var);
+		}
+
+		hr = pPropBag->Write(L"FriendlyName", &var);
+
+		// WaveInID applies only to audio capture devices.
+		hr = pPropBag->Read(L"WaveInID", &var, 0);
+		if (SUCCEEDED(hr))
+		{
+			printf("WaveIn ID: %d\n", var.lVal);
+			VariantClear(&var);
+		}
+
+		hr = pPropBag->Read(L"DevicePath", &var, 0);
+		if (SUCCEEDED(hr))
+		{
+			// The device path is not intended for display.
+			printf("Device path: %S\n", var.bstrVal);
+			std::wstring ws(var.bstrVal, SysStringLen(var.bstrVal));
+			currentDevice.path = ws;
+			VariantClear(&var);
+		}
+
+		pPropBag->Release();
+		pMoniker->Release();
+
+		deviceList.push_back(currentDevice);
+	}
+
+
+	return deviceList;
 }

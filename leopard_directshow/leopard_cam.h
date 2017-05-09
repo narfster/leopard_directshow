@@ -7,17 +7,36 @@
 #include <iostream>
 #define LOG_MSG(lvl,msg ) std::cout << msg
 
-#define XU_TRIGGER_DELAY_TIME (0x0a)
-#define XU_TRIGGER_MODE		  (0x0b)
-#define XU_SOFT_TRIGGER       (0x09)
 
+#define XU_MODE_SWITCH		  (0x01)
+#define XU_WINDOW_REPOSITION  (0x02)
+#define XU_LED_MODES		  (0x03)
+#define XU_GAIN_CONTROL_RGB   (0x04)
+#define XU_GAIN_CONTROL_A	  (0x05)
+#define XU_EXPOSURE_TIME	  (0x06)
+#define XU_UUID_HWFW_REV	  (0x07)
+#define XU_DEFECT_PIXEL_TABLE (0x08)
+#define XU_SOFT_TRIGGER		  (0x09)
+#define XU_TRIGGER_MODE		  (0x0b)
+#define XU_TRIGGER_DELAY_TIME (0x0a)
+// for sensor register configuration into flash
+#define XU_SENSOR_REGISTER_CONFIGURATION  (0x0c)
+#define XU_EXTENSION_INFO	  (0x0d)
+#define XU_GENERIC_REG_RW     (0x0e)
 
 class leopard_cam : public IVideoIn
 {
 public:
+	typedef void(*callback_function)(uint8_t*, uint32_t); // type callback function
+
 	leopard_cam()
 	{
-		status_ = setup2();
+		//status_ = setup2();
+	}
+
+	~leopard_cam()
+	{
+		//dshow_graph destrctor will be called automaticly.
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -33,19 +52,24 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	int setup2() 
+	int setup(dshow_graph::device selected)
 	{
-		return dshow_.setup();
+		status_ = dshow_.setup(selected);
+		return status_;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	void run()override{
-	
-		dshow_.render();
-		dshow_.run_graph();
+	void run()override
+	{
+		if (status_ == 0)
+		{
+			dshow_.render();
+			dshow_.run_graph();
+		}
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -54,20 +78,29 @@ public:
 
 	bool set_exposure(uint32_t exposureVal) override
 	{
-		int errCode = 0;
-		auto pCapFilter = dshow_.getCapFilter();
+		if (status_ == 0)
+		{
+			int errCode = 0;
+			auto pCapFilter = dshow_.getCapFilter();
 
-		uint8_t p_data[2];
-		p_data[0] = (uint8_t)(exposureVal);
-		p_data[1] = (uint8_t)(exposureVal >> 8);
+			if (pCapFilter == nullptr)
+			{
+				return false;
+			}
 
-		ULONG p_result[10] = { 0 };
+			uint8_t p_data[2];
+			p_data[0] = (uint8_t)(exposureVal);
+			p_data[1] = (uint8_t)(exposureVal >> 8);
 
-		errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
+			ULONG p_result[10] = { 0 };
 
-		LOG_MSG(trace, "exposrue set to: " << exposureVal << std::endl);
+			errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
 
-		return errCode;
+			LOG_MSG(trace, "exposrue set to: " << exposureVal << std::endl);
+
+			return errCode;
+		}
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -76,85 +109,117 @@ public:
 
 	bool set_trigger(bool isEnabled) override
 	{
-		int errCode = 0;
-		auto pCapFilter = dshow_.getCapFilter();
 
-		uint8_t p_data[2];
-		if(isEnabled == true)
+		if (status_ == 0)
 		{
-			p_data[0] = (uint8_t)(0x03);
-		}
-		else
-		{
-			p_data[0] = (uint8_t)(0x00);
-		}
-		
-		p_data[1] = (uint8_t)(0x00);
 
-		ULONG p_result[10] = { 0 };
-		errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x0b, p_data, 2, p_result);
-		if(errCode == 0)
-		{
-			LOG_MSG(trace, "camera trigger = " << isEnabled << std::endl);
+			auto pCapFilter = dshow_.getCapFilter();
+
+			uint8_t p_data[2];
+			if (isEnabled == true)
+			{
+				p_data[0] = (uint8_t)(0x03);
+			}
+			else
+			{
+				p_data[0] = (uint8_t)(0x00);
+			}
+
+			p_data[1] = (uint8_t)(0x00);
+
+			ULONG p_result[10] = { 0 };
+			status_ = util_uvc_ext::write_to_uvc_extension(pCapFilter, XU_EXPOSURE_TIME, p_data, 2, p_result);
+			if (status_ == 0)
+			{
+				LOG_MSG(trace, "camera trigger = " << isEnabled << std::endl);
+			}
+			else
+			{
+				LOG_MSG(trace, "ERROR: set camera trigger" << std::endl);
+			}
 		}
-		else
-		{
-			LOG_MSG(trace, "ERROR: set camera trigger" << std::endl);
-		}
-		
-		return errCode;
+
+		return status_;
 	}
 
-	
+
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
 	uint32_t get_exposure() override
 	{
-		return 0;
+		int exposure = -1;
+
+		if (status_ == 0)
+		{
+			uint8_t p_data[2];
+			uint8_t val1;
+			uint8_t val2;
+			unsigned long length_returned;
+			auto pCapFilter = dshow_.getCapFilter();
+
+			status_ = util_uvc_ext::read_from_uvc_extension(pCapFilter, XU_EXPOSURE_TIME, p_data, 2, &length_returned);
+			if (status_ == 0)
+			{
+
+			}
+			else
+			{
+
+			}
+			val1 = p_data[0];
+			val2 = p_data[1];
+			exposure = ((int)p_data[1] << 8 | (int)p_data[0]) & 0x0000ffff;
+		}
+
+		return exposure;
 	}
-	
+
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
 	bool set_gain(uint32_t gain) override
 	{
-		return false;
+		return dshow_.set_gain(gain);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	uint32_t get_gain() override
+	long get_gain() override
 	{
-		return 0;
+		long gainVal = 0;
+		return dshow_.get_gain(&gainVal);
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	int set_trigger_delay_time_zero() 
+	int set_trigger_delay_time_zero()
 	{
-		int errCode = 0;
-		auto pCapFilter = dshow_.getCapFilter();
+		if (status_ == 0)
+		{
+			auto pCapFilter = dshow_.getCapFilter();
 
-		uint8_t p_data[4];
-		p_data[0] = 0;
-		p_data[1] = 0;
-		p_data[2] = 0;
-		p_data[3] = 0;
+			uint8_t p_data[4];
+			p_data[0] = 0;
+			p_data[1] = 0;
+			p_data[2] = 0;
+			p_data[3] = 0;
 
-		ULONG p_result[10] = { 0 };
+			ULONG p_result[10] = { 0 };
 
-		errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, XU_TRIGGER_DELAY_TIME, p_data, 4, p_result);
+			status_ = util_uvc_ext::write_to_uvc_extension(pCapFilter, XU_TRIGGER_DELAY_TIME, p_data, 4, p_result);
 
-		LOG_MSG(trace, "set_trigger_delay_time_zero " << std::endl);
+			LOG_MSG(trace, "set_trigger_delay_time_zero " << std::endl);
+		}
 
-		return errCode;
+		return status_;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -179,6 +244,15 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
+	void set_callback_c_style(callback_function callback_func)
+	{
+		dshow_.set_callback(callback_func);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+
 	void set_callback(std::function<void(uint8_t*, uint32_t)> callback_func)
 	{
 		dshow_.set_callback(callback_func);
@@ -196,7 +270,7 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
-	
+
 	int get_device_status() const
 	{
 		return status_;
@@ -207,8 +281,20 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 
 
+	std::vector<dshow_graph::device> get_devices_list()
+	{
+		return dshow_.get_device_list();
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+
+
 private:
 
-	  dshow_graph dshow_;
-	  int status_;
+	dshow_graph dshow_;
+	int status_ = -1;
+
+
 };
