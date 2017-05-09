@@ -94,7 +94,7 @@ public:
 
 			ULONG p_result[10] = { 0 };
 
-			errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, 0x06, p_data, 2, p_result);
+			errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, XU_EXPOSURE_TIME, p_data, 2, p_result);
 
 			LOG_MSG(trace, "exposrue set to: " << exposureVal << std::endl);
 
