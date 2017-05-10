@@ -1,15 +1,18 @@
 #pragma once
 #include <functional>
-class IVideoIn
+#include "directshow.h"
+
+class video_in
 {
 
 public:
 
-	typedef void(*callback_function)(uint8_t*, uint32_t); // type callback function
-	
-	virtual ~IVideoIn()
+	virtual ~video_in()
 	{
 	}
+
+	typedef void(*callback_function)(uint8_t*, uint32_t); // type callback function
+	
 
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
