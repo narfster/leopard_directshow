@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void thread1_func(IVideoIn *video_in)
+void thread1_func(video_in_base *video_in)
 {
 	int exposure = 2;
 
@@ -102,7 +102,7 @@ int main()
 	//std::wstring dev_name{ L"MT9M021M" };
 
 
-	auto video_in = std::make_unique<IVideoIn>();
+	auto video_in = std::make_unique<video_in_base>();
 	video_display vdisplay;
 
 	bool isDeviceFound = false;
@@ -145,7 +145,7 @@ int main()
 
 		//startup thread for controling capture
 		std::thread t1(thread1_func, video_in.get());
-		std::thread t2(&IVideoIn::run, video_in.get());
+		std::thread t2(&video_in_base::run, video_in.get());
 
 		t1.join();
 		t2.join();

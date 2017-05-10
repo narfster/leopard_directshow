@@ -174,7 +174,7 @@
   <ItemGroup>
     <ClInclude Include="directshow.h" />
     <ClInclude Include="econ_cam.h" />
-    <ClInclude Include="IVideoIn.h" />
+    <ClInclude Include="video_in_base.h" />
     <ClInclude Include="leopard_cam.h" />
     <ClInclude Include="qedit.h" />
     <ClInclude Include="util_image.h" />
