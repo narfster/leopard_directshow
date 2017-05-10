@@ -19,30 +19,40 @@ dshow_graph::dshow_graph()
 dshow_graph::~dshow_graph()
 {
 	
-
-	pControlInterface->Stop();	
-	pEventInterface->CancelDefaultHandling(evCode);
+	if(pControlInterface!=nullptr)
+	{
+		pControlInterface->Stop();
+	}
+	
+	if(pEventInterface != nullptr)
+	{
+		pEventInterface->CancelDefaultHandling(evCode);
+	}
+	
 	
 
 	// Enumerate the filters in the graph.
 	IEnumFilters *pEnum = NULL;
-	HRESULT hr = pGraphInterface->EnumFilters(&pEnum);
-	if (SUCCEEDED(hr))
+	if (pGraphInterface != nullptr)
 	{
-		IBaseFilter *pFilter = NULL;
-		while (S_OK == pEnum->Next(1, &pFilter, NULL))
+		HRESULT hr = pGraphInterface->EnumFilters(&pEnum);
+		if (SUCCEEDED(hr))
 		{
-			// Remove the filter.
-			pGraphInterface->RemoveFilter(pFilter);
-			// Reset the enumerator.
-			pEnum->Reset();
-			pFilter->Release();
+			IBaseFilter *pFilter = NULL;
+			while (S_OK == pEnum->Next(1, &pFilter, NULL))
+			{
+				// Remove the filter.
+				pGraphInterface->RemoveFilter(pFilter);
+				// Reset the enumerator.
+				pEnum->Reset();
+				pFilter->Release();
+			}
+			pEnum->Release();
 		}
-		pEnum->Release();
-	}
 
-	pEventInterface->Release();
-	pControlInterface->Release();
+		pEventInterface->Release();
+		pControlInterface->Release();
+	}
 
 	CoUninitialize();
 }
