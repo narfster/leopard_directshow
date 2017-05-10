@@ -167,7 +167,7 @@
   <ItemGroup>
     <ClCompile Include="directshow.cpp" />
     <ClCompile Include="SampleGrabberCallback.h" />
-    <ClCompile Include="Source.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="util_image.cpp" />
     <ClCompile Include="util_uvc_ext.cpp" />
   </ItemGroup>
