@@ -27,12 +27,12 @@ void thread1_func(leopard_cam *video_in)
 			key_code = _getch();
 			if (key_code == '+')
 			{
-				exposure += 100;
+				exposure += 10;
 				video_in->set_exposure(exposure);
 			}
 			if (key_code == '-')
 			{
-				exposure -= 100;
+				exposure -= 10;
 				if (exposure < 0) exposure = 0;
 				video_in->set_exposure(exposure);
 			}
@@ -75,8 +75,11 @@ void thread1_func(leopard_cam *video_in)
 //
 int main()
 {
-	std::wstring dev_name { L"MT9V034" };
+	//std::wstring dev_name { L"MT9V034" };
 	//std::wstring dev_name{ L"See3CAM_CU51" };
+	std::wstring dev_name{ L"See3CAM_12CUNIR" };
+	//std::wstring dev_name{ L"MT9M021M" };
+	
 
 	leopard_cam leo_cam;
 	video_display vdisplay;
@@ -88,9 +91,9 @@ int main()
 		if (deviceList[i].name == dev_name)
 		{
 			leo_cam.setup(deviceList[i]);
-			leo_cam.set_format(0);
+			leo_cam.set_format(6);
 			auto imgFmt = leo_cam.get_img_format();
-			vdisplay.set_img_format(imgFmt.width, imgFmt.height, imgFmt.bytesPerPixel, imgFmt.bitsPerPixel);
+			vdisplay.set_img_format(imgFmt.width, imgFmt.height, imgFmt.bytesPerPixel, 12);
 			auto func = std::bind(&video_display::display_blocking, &vdisplay, std::placeholders::_1, std::placeholders::_2);
 			leo_cam.set_callback(func);
 

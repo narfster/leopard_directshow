@@ -128,7 +128,7 @@ public:
 			p_data[1] = (uint8_t)(0x00);
 
 			ULONG p_result[10] = { 0 };
-			status_ = util_uvc_ext::write_to_uvc_extension(pCapFilter, XU_EXPOSURE_TIME, p_data, 2, p_result);
+			status_ = util_uvc_ext::write_to_uvc_extension(pCapFilter, XU_TRIGGER_MODE, p_data, 2, p_result);
 			if (status_ == 0)
 			{
 				LOG_MSG(trace, "camera trigger = " << isEnabled << std::endl);
@@ -200,7 +200,7 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	int set_trigger_delay_time_zero()
+	int set_trigger_delay_time_zero() override
 	{
 		if (status_ == 0)
 		{
