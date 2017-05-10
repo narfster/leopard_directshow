@@ -3,9 +3,9 @@
 #include <vector>
 
 
-directshow::directshow()
+directshow::directshow(): evCode(0)
 {
-	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(hr))
 	{
 		printf("ERROR: CoInitializeEx\r\n");
