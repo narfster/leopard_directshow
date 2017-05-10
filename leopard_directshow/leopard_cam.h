@@ -8,6 +8,10 @@
 #include "leopard_cam_ext.h"
 #define LOG_MSG(lvl,msg ) std::cout << msg
 
+//Leopard Camera types
+#define CAM_V034    L"MT9V034" 
+#define CAM_M021M   L"MT9M021M" 
+
 
 #define XU_MODE_SWITCH		  (0x01)
 #define XU_WINDOW_REPOSITION  (0x02)
@@ -30,9 +34,11 @@ class leopard_cam : public IVideoIn
 public:
 
 
-	leopard_cam()
+	dshow_graph::device device_;
+
+	explicit leopard_cam(dshow_graph::device dev)
 	{
-		
+		device_ = dev;
 	}
 
 	~leopard_cam()
@@ -40,6 +46,23 @@ public:
 		//dshow_graph destrctor will be called automaticly.
 	}
 
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+
+	dshow_graph::imgFormat get_img_format() const override
+	{
+		auto fmt = dshow_.get_image_format();
+		if (device_.name == CAM_V034)
+		{
+			fmt.bitsPerPixel = 10;
+		}
+		else if(device_.name == CAM_M021M)
+		{
+			fmt.bitsPerPixel = 12;
+		}
+		return fmt;
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////

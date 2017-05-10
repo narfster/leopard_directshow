@@ -192,7 +192,7 @@ dshow_graph::imgFormat dshow_graph::get_image_format() const
 			fmt.height = pVih->bmiHeader.biHeight;
 			fmt.frameSize = pmt->lSampleSize;
 			fmt.bytesPerPixel = fmt.frameSize / (fmt.width * fmt.height);
-			fmt.bitsPerPixel = 10; //TODO!!!
+			fmt.bitsPerPixel = 10; //Needs to be reset in superclass
 		}
 	}
 

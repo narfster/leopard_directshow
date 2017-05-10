@@ -1,28 +1,32 @@
 #pragma once
 #include "IVideoIn.h"
 #include <cam_econ/eCAMFwSw.h>
+
+#define CAM_CU51    L"See3CAM_CU51" 
+#define CAM_12CUNIR L"See3CAM_12CUNIR"
+
+
 class econ_cam : public IVideoIn
 {
 public:
 
-	econ_cam()
+	dshow_graph::device device_;
+
+
+	explicit econ_cam(dshow_graph::device dev)
 	{
-	
+		device_ = dev;
+		init_ext_unit();
 	}
 
-	explicit econ_cam(std::wstring devicePath)
-	{
-		init_ext_unit(devicePath);
-	}
-
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	static bool init_ext_unit(std::wstring devicePath)
+	bool init_ext_unit() const
 	{
-		auto str = devicePath.c_str();
-		bool isSuccess = InitExtensionUnit((TCHAR *)str);
+		auto str = device_.path.c_str();
+		bool isSuccess = InitExtensionUnit(const_cast<TCHAR *>(str));
 		if(isSuccess == false)
 		{
 			std::cout << "InitExtensionUnit FAILED" << std::endl;
@@ -81,6 +85,23 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
+
+	dshow_graph::imgFormat get_img_format() const override
+	{
+		auto fmt = dshow_.get_image_format();
+		if(device_.name == CAM_12CUNIR || 
+			device_.name == CAM_CU51)
+		{
+			fmt.bitsPerPixel = 12;
+		}
+		return fmt;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+
+	
 
 private:
 	std::string convert_uint_to_string(UINT8 n)
