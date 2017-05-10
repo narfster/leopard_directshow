@@ -1,9 +1,9 @@
-#include "dshow_graph.h"
+#include "directshow.h"
 #include <iostream>
 #include <vector>
 
 
-dshow_graph::dshow_graph()
+directshow::directshow()
 {
 	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 	if (FAILED(hr))
@@ -16,7 +16,7 @@ dshow_graph::dshow_graph()
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-dshow_graph::~dshow_graph()
+directshow::~directshow()
 {
 	
 	if(pControlInterface!=nullptr)
@@ -61,7 +61,7 @@ dshow_graph::~dshow_graph()
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-HRESULT dshow_graph::EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum)
+HRESULT directshow::EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum)
 {
 	// Create the System Device Enumerator.
 	ICreateDevEnum *pDevEnum;
@@ -88,7 +88,7 @@ HRESULT dshow_graph::EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum)
 /*
  * if device was not found return false
  */
-bool dshow_graph::DisplayDeviceInformation(IEnumMoniker* pEnum)
+bool directshow::DisplayDeviceInformation(IEnumMoniker* pEnum)
 {
 	auto retVal = false;
 
@@ -166,7 +166,7 @@ bool dshow_graph::DisplayDeviceInformation(IEnumMoniker* pEnum)
 ////////////////////////////////////////////////////////////////////////////////
 
 
-dshow_graph::imgFormat dshow_graph::get_image_format() const
+directshow::imgFormat directshow::get_image_format() const
 {
 	AM_MEDIA_TYPE *pmt;
 	HRESULT hr;
@@ -203,7 +203,7 @@ dshow_graph::imgFormat dshow_graph::get_image_format() const
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void dshow_graph::print_camera_cap()
+void directshow::print_camera_cap()
 {
 	int iCount, iSize;
 	BYTE *pSCC = NULL;
@@ -268,7 +268,7 @@ void dshow_graph::print_camera_cap()
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void dshow_graph::set_camera_format(int capIndex)
+void directshow::set_camera_format(int capIndex)
 {
 	HRESULT hr;
 	int iCount, iSize;
@@ -314,7 +314,7 @@ void dshow_graph::set_camera_format(int capIndex)
 //	|		  |		  | Grabber |      |         |              |
 //	|---------|		  |---------|      |---------|              |
 //---------------------------------------------------------------
-void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_func)
+void directshow::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_func)
 {
 	// COM stuff //
 
@@ -459,7 +459,7 @@ void dshow_graph::setup_graph(std::function<void(uint8_t*, uint32_t)> callback_f
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-int dshow_graph::setup(dshow_graph::device selected)
+int directshow::setup(directshow::device selected)
 {
 	selected_device_ = selected;
 
@@ -599,7 +599,7 @@ int dshow_graph::setup(dshow_graph::device selected)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void dshow_graph::render()
+void directshow::render()
 {
 	HRESULT hr;
 
@@ -616,7 +616,7 @@ void dshow_graph::render()
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void dshow_graph::run_graph()
+void directshow::run_graph()
 {
 	HRESULT hr;
 	hr = pControlInterface->Run();
@@ -635,7 +635,7 @@ void dshow_graph::run_graph()
 ////////////////////////////////////////////////////////////////////////////////
 
 
-IBaseFilter* dshow_graph::getCapFilter() const
+IBaseFilter* directshow::getCapFilter() const
 {
 	return pCapFilter;
 }
@@ -644,7 +644,7 @@ IBaseFilter* dshow_graph::getCapFilter() const
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void dshow_graph::set_callback(std::function<void(uint8_t*, uint32_t)> function)
+void directshow::set_callback(std::function<void(uint8_t*, uint32_t)> function)
 {
 	sgCallback->setupBuffer(function);
 }
@@ -653,7 +653,7 @@ void dshow_graph::set_callback(std::function<void(uint8_t*, uint32_t)> function)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool dshow_graph::set_gain(uint32_t gainVal)
+bool directshow::set_gain(uint32_t gainVal)
 {
 	HRESULT hr;
 
@@ -687,7 +687,7 @@ bool dshow_graph::set_gain(uint32_t gainVal)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool dshow_graph::get_gain(long *gainVal)
+bool directshow::get_gain(long *gainVal)
 {
 	HRESULT hr;
 
@@ -715,10 +715,10 @@ bool dshow_graph::get_gain(long *gainVal)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-std::vector<dshow_graph::device> dshow_graph::get_device_list()
+std::vector<directshow::device> directshow::get_device_list()
 {
 	HRESULT hr;
-	std::vector<dshow_graph::device> list; //just an empty list, somthing to return;
+	std::vector<directshow::device> list; //just an empty list, somthing to return;
 
 	IEnumMoniker *pEnum;
 	hr = EnumerateDevices(CLSID_VideoInputDeviceCategory, &pEnum);
@@ -735,7 +735,7 @@ std::vector<dshow_graph::device> dshow_graph::get_device_list()
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool dshow_graph::set_exposure(int val)
+bool directshow::set_exposure(int val)
 {
 	HWND hTrackbar = nullptr; // Handle to the trackbar control. 
 					// Initialize hTrackbar (not shown).
@@ -780,11 +780,11 @@ bool dshow_graph::set_exposure(int val)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-std::vector<dshow_graph::device> dshow_graph::buid_device_list(IEnumMoniker* pEnum)
+std::vector<directshow::device> directshow::buid_device_list(IEnumMoniker* pEnum)
 {
 	auto retVal = false;
 
-	std::vector<dshow_graph::device> deviceList;
+	std::vector<directshow::device> deviceList;
 
 	IMoniker *pMoniker = NULL;
 

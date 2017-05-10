@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IVideoIn.h"
-#include "dshow_graph.h"
+#include "directshow.h"
 #include "util_uvc_ext.h"
 
 #include <iostream>
@@ -34,23 +34,23 @@ class leopard_cam : public IVideoIn
 public:
 
 
-	dshow_graph::device device_;
+	directshow::device device_;
 
-	explicit leopard_cam(dshow_graph::device dev)
+	explicit leopard_cam(directshow::device dev)
 	{
 		device_ = dev;
 	}
 
 	~leopard_cam()
 	{
-		//dshow_graph destrctor will be called automaticly.
+		//directshow destrctor will be called automaticly.
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	dshow_graph::imgFormat get_img_format() const override
+	directshow::imgFormat get_img_format() const override
 	{
 		auto fmt = dshow_.get_image_format();
 		if (device_.name == CAM_V034)

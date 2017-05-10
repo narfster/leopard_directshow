@@ -10,10 +10,10 @@ class econ_cam : public IVideoIn
 {
 public:
 
-	dshow_graph::device device_;
+	directshow::device device_;
 
 
-	explicit econ_cam(dshow_graph::device dev)
+	explicit econ_cam(directshow::device dev)
 	{
 		device_ = dev;
 		init_ext_unit();
@@ -86,7 +86,7 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	dshow_graph::imgFormat get_img_format() const override
+	directshow::imgFormat get_img_format() const override
 	{
 		auto fmt = dshow_.get_image_format();
 		if(device_.name == CAM_12CUNIR || 

@@ -27,7 +27,7 @@
     <ClCompile Include="SampleGrabberCallback.h">
       <Filter>Header Files</Filter>
     </ClCompile>
-    <ClCompile Include="dshow_graph.cpp">
+    <ClCompile Include="directshow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,9 +41,6 @@
     <ClInclude Include="util_uvc_ext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="dshow_graph.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="IVideoIn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="econ_cam.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="directshow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

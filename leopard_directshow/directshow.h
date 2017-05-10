@@ -5,7 +5,7 @@
 #include "SampleGrabberCallback.h"
 #include <vector>
 
-class dshow_graph
+class directshow
 {
 public:
 	struct imgFormat
@@ -24,19 +24,19 @@ public:
 		std::wstring path;
 	};
 
-	dshow_graph();
-	~dshow_graph();
+	directshow();
+	~directshow();
 	void run_graph();
 	void print_camera_cap();
 	void set_camera_format(int capIndex);
 	void setup_graph(std::function<void(uint8_t*, uint32_t)> callback_func);
-	int setup(dshow_graph::device selected);
+	int setup(directshow::device selected);
 	void render();
 	imgFormat get_image_format() const;
 	IBaseFilter* getCapFilter() const;
 	void set_callback(std::function<void(uint8_t*, uint32_t)> function);
 
-	std::vector<dshow_graph::device> get_device_list();
+	std::vector<directshow::device> get_device_list();
 
 	//ProcAmp Settings
 	bool set_gain(uint32_t gainVal);
@@ -49,7 +49,7 @@ private:
 	
 	HRESULT EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum);
 	bool DisplayDeviceInformation(IEnumMoniker* pEnum);
-	std::vector<dshow_graph::device> buid_device_list(IEnumMoniker* pEnum);
+	std::vector<directshow::device> buid_device_list(IEnumMoniker* pEnum);
 
 
 	IBaseFilter *pCapFilter = NULL;			//filter to capture video input from webcam.

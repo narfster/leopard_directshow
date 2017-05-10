@@ -1,8 +1,8 @@
 
 #include <opencv2/opencv.hpp>
 #include <thread>
-#include "dshow_graph.h"
 #include <conio.h>
+#include "directshow.h"
 #include "leopard_cam.h"
 #include "video_display.h"
 #include "econ_cam.h"
@@ -105,29 +105,32 @@ int main()
 	auto video_in = std::make_unique<IVideoIn>();
 	video_display vdisplay;
 
-	bool isDeviceFound = true;
+	bool isDeviceFound = false;
 	auto deviceList = video_in->get_devices_list();
 	int i = 0;
-	for (i = 0; i < deviceList.size() && isDeviceFound == false; i++)
+	for (i = 0; i < deviceList.size() && !isDeviceFound;  i++)
 	{
 		if (deviceList[i].name == L"MT9M021M")
 		{
 			video_in = std::make_unique<leopard_cam>(deviceList[i]);
 			video_in->set_format(6);
+			isDeviceFound = true;
 		}
 		else if (deviceList[i].name == L"MT9V034")
 		{
 			video_in = std::make_unique<leopard_cam>(deviceList[i]);
 			video_in->set_format(0);
+			isDeviceFound = true;
 		}
 		else if (deviceList[i].name == L"See3CAM_12CUNIR")
 		{
 			video_in = std::make_unique<econ_cam>(deviceList[i]);
 			video_in->set_format(4); //12
+			isDeviceFound = true;
 		}
 		else
 		{
-			isDeviceFound = false;
+			
 		}
 
 	}
