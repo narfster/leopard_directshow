@@ -30,9 +30,6 @@
     <ClCompile Include="dshow_graph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="leopard_cam_ext.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="qedit.h">
@@ -56,7 +53,7 @@
     <ClInclude Include="video_display.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="leopard_cam_ext.h">
+    <ClInclude Include="econ_cam.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

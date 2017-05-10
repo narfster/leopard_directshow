@@ -7,6 +7,7 @@
 #include <conio.h>
 #include "leopard_cam.h"
 #include "video_display.h"
+#include "econ_cam.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -15,7 +16,7 @@
 
 void thread1_func(IVideoIn *video_in)
 {
-	int exposure = 100;
+	int exposure = 2;
 
 
 	while (true)
@@ -27,14 +28,21 @@ void thread1_func(IVideoIn *video_in)
 			key_code = _getch();
 			if (key_code == '+')
 			{
-				exposure += 10;
-				video_in->set_exposure(exposure);
+				exposure += 1;
+				if (video_in->set_exposure(exposure) == false)
+				{
+					exposure--;
+				}
+				std::cout << "exposure " << exposure << std::endl;
 			}
 			if (key_code == '-')
 			{
-				exposure -= 10;
-				if (exposure < 0) exposure = 0;
-				video_in->set_exposure(exposure);
+				exposure -= 1;
+				if (video_in->set_exposure(exposure) == false)
+				{
+					exposure++;
+				}
+				std::cout << "exposure " << exposure << std::endl;
 			}
 			if (key_code == 't')
 			{
@@ -62,7 +70,7 @@ void thread1_func(IVideoIn *video_in)
 				{
 					std::cout << "cannot call a leo cam function" << std::endl;
 				}
-				
+
 				std::cout << "//=============//" << std::endl;
 			}
 
@@ -85,41 +93,64 @@ int main()
 {
 	//std::wstring dev_name{ L"MT9V034" };
 	//std::wstring dev_name{ L"See3CAM_CU51" };
-	std::wstring dev_name{ L"See3CAM_12CUNIR" };
+	//std::wstring dev_name{ L"See3CAM_12CUNIR" };
 	//std::wstring dev_name{ L"MT9M021M" };
 
 
 	auto video_in = std::make_unique<IVideoIn>();
 	video_display vdisplay;
 
-
+	bool isDeviceFound = false;
 	auto deviceList = video_in->get_devices_list();
-	for (auto i = 0; i < deviceList.size(); i++)
+	int i = 0;
+	for (i = 0; i < deviceList.size() && isDeviceFound == false; i++)
 	{
-		if (deviceList[i].name == dev_name)
+		if (deviceList[i].name == L"MT9M021M")
 		{
-			if (dev_name == L"MT9V034")
-			{
-				video_in = std::make_unique<leopard_cam>();
-			}
-
-			video_in->setup(deviceList[i]);
+			video_in = std::make_unique<leopard_cam>();
 			video_in->set_format(6);
-			auto imgFmt = video_in->get_img_format();
-			vdisplay.set_img_format(imgFmt.width, imgFmt.height, imgFmt.bytesPerPixel, 12);
-			auto func = std::bind(&video_display::display_blocking, &vdisplay, std::placeholders::_1, std::placeholders::_2);
-			video_in->set_callback(func);
-
-			break;
+			isDeviceFound = true;
 		}
+		else if (deviceList[i].name == L"MT9V034")
+		{
+			video_in = std::make_unique<leopard_cam>();
+			video_in->set_format(0);
+			isDeviceFound = true;
+		}
+		else if (deviceList[i].name == L"See3CAM_12CUNIR")
+		{
+			video_in = std::make_unique<econ_cam>();
+			video_in->set_format(4);
+			isDeviceFound = true;
+		}
+		else
+		{
+
+		}
+
 	}
 
-	//startup thread for controling capture
-	std::thread t1(thread1_func, static_cast<leopard_cam*>(video_in.get()));
-	std::thread t2(&IVideoIn::run, video_in.get());
+	if (isDeviceFound == true)
+	{
+		video_in->setup(deviceList[i-1]);
+		auto imgFmt = video_in->get_img_format();
+		vdisplay.set_img_format(imgFmt.width, imgFmt.height, imgFmt.bytesPerPixel, 12);
+		auto func = std::bind(&video_display::display_blocking, &vdisplay, std::placeholders::_1, std::placeholders::_2);
+		video_in->set_callback(func);
 
-	t1.join();
-	t2.join();
+		//startup thread for controling capture
+		std::thread t1(thread1_func, video_in.get());
+		std::thread t2(&IVideoIn::run, video_in.get());
+
+		t1.join();
+		t2.join();
+	}
+	else
+	{
+		std::cout << " no device found. " << std::endl;
+	}
+
+
 
 
 }

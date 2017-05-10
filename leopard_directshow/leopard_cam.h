@@ -45,7 +45,7 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	bool set_exposure(uint32_t exposureVal) override
+	bool set_exposure(int exposureVal) override
 	{
 		if (status_ == 0)
 		{
@@ -66,8 +66,7 @@ public:
 			errCode = util_uvc_ext::write_to_uvc_extension(pCapFilter, XU_EXPOSURE_TIME, p_data, 2, p_result);
 
 			LOG_MSG(trace, "exposrue set to: " << exposureVal << std::endl);
-
-			return errCode;
+			return true;
 		}
 
 		return false;

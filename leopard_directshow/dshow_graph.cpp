@@ -735,6 +735,51 @@ std::vector<dshow_graph::device> dshow_graph::get_device_list()
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+bool dshow_graph::set_exposure(int val)
+{
+	HWND hTrackbar = nullptr; // Handle to the trackbar control. 
+					// Initialize hTrackbar (not shown).
+	HRESULT hr;
+
+					// Query the capture filter for the IAMVideoProcAmp interface.
+	IAMVideoProcAmp *pCamControl = 0;
+	hr = pCapFilter->QueryInterface(IID_IAMCameraControl, (void**)&pCamControl);
+	if (FAILED(hr))
+	{
+		return false;
+	}
+	else
+	{
+		long Min, Max, Step, Default, Flags, currentVal;
+
+		// Get the range and default value. 
+		hr = pCamControl->GetRange(CameraControl_Exposure, &Min, &Max, &Step,
+			&Default, &Flags);
+		if (SUCCEEDED(hr))
+		{
+			// Get the current value.
+			hr = pCamControl->Get(CameraControl_Exposure, &currentVal, &Flags);
+		}
+
+		if(val >= Min && val <=Max)
+		{
+			if (SUCCEEDED(hr))
+			{
+				// Set the current value.
+				hr = pCamControl->Set(CameraControl_Exposure, val, CameraControl_Flags_Manual);
+
+				return true;
+			}
+		}
+
+	}
+	return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 std::vector<dshow_graph::device> dshow_graph::buid_device_list(IEnumMoniker* pEnum)
 {
 	auto retVal = false;

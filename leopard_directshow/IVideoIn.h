@@ -15,9 +15,9 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 
-	virtual bool set_exposure(uint32_t exposureVal)
+	virtual bool set_exposure(int exposureVal)
 	{
-		return false;
+		return dshow_.set_exposure(exposureVal);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -84,6 +84,11 @@ public:
 	int setup(dshow_graph::device selected)
 	{
 		status_ = dshow_.setup(selected);
+		if(status_ != -1 && capIndex_ != -1)
+		{
+			dshow_.set_camera_format(capIndex_);
+		}
+		
 		return status_;
 	}
 
@@ -143,12 +148,13 @@ public:
 
 	void set_format(int capIndex)
 	{
-		dshow_.set_camera_format(capIndex);
+		capIndex_ = capIndex;
 	}
 
-	dshow_graph dshow_;
-	int status_;
 
+	dshow_graph dshow_;
+	int status_ = -1;
+	int capIndex_ = -1;
 
 private:
 

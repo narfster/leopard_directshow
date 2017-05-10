@@ -35,10 +35,16 @@ public:
 	imgFormat get_image_format() const;
 	IBaseFilter* getCapFilter() const;
 	void set_callback(std::function<void(uint8_t*, uint32_t)> function);
+
+	std::vector<dshow_graph::device> get_device_list();
+
+	//ProcAmp Settings
 	bool set_gain(uint32_t gainVal);
 	bool get_gain(long *gainVal);
-	std::vector<dshow_graph::device> get_device_list();
-	
+
+	//Camera Settings
+	bool set_exposure(int val);
+
 private:
 	
 	HRESULT EnumerateDevices(REFGUID category, IEnumMoniker **ppEnum);
