@@ -1,5 +1,5 @@
 
-#include "opencv2/opencv.hpp"
+#include <opencv/opencv2/opencv.hpp>
 #include "util_image.h"
 #include "util_uvc_ext.h"
 #include <thread>
@@ -73,6 +73,13 @@ void thread1_func(IVideoIn *video_in)
 
 				std::cout << "//=============//" << std::endl;
 			}
+			if (key_code == 'v')
+			{
+				if ((typeid(*video_in) == typeid(econ_cam)))
+				{
+					static_cast<econ_cam*>(video_in)->print_firmare_ver();
+				}
+			}
 
 		}
 		else
@@ -121,6 +128,8 @@ int main()
 		{
 			video_in = std::make_unique<econ_cam>();
 			video_in->set_format(4);
+			static_cast<econ_cam *>(video_in.get())->init_ext_unit(deviceList[i].path);
+			
 			isDeviceFound = true;
 		}
 		else
