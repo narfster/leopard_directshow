@@ -1,12 +1,12 @@
 #pragma once
-#include "IVideoIn.h"
+#include "video_in_base.h"
 #include <cam_econ/eCAMFwSw.h>
 
 #define CAM_CU51    L"See3CAM_CU51" 
 #define CAM_12CUNIR L"See3CAM_12CUNIR"
 
 
-class econ_cam : public IVideoIn
+class econ_cam : public video_in_base
 {
 public:
 

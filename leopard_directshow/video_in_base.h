@@ -1,13 +1,13 @@
 #pragma once
 #include <functional>
-class IVideoIn
+class video_in_base
 {
 
 public:
 
 	typedef void(*callback_function)(uint8_t*, uint32_t); // type callback function
 	
-	virtual ~IVideoIn()
+	virtual ~video_in_base()
 	{
 	}
 

@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="util_image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -28,6 +25,9 @@
       <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="directshow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,9 +41,6 @@
     <ClInclude Include="util_uvc_ext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IVideoIn.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="leopard_cam.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="directshow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="video_in_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

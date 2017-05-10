@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IVideoIn.h"
+#include "video_in_base.h"
 #include "directshow.h"
 #include "util_uvc_ext.h"
 
@@ -29,7 +29,7 @@
 #define XU_EXTENSION_INFO	  (0x0d)
 #define XU_GENERIC_REG_RW     (0x0e)
 
-class leopard_cam : public IVideoIn
+class leopard_cam : public video_in_base
 {
 public:
 
