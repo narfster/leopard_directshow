@@ -1,6 +1,9 @@
 #pragma once
 #include "video_in_base.h"
 #include <cam_econ/eCAMFwSw.h>
+#include "directshow.h"
+#include <iostream>
+#include <sstream>
 
 #define CAM_CU51    L"See3CAM_CU51" 
 #define CAM_12CUNIR L"See3CAM_12CUNIR"
