@@ -71,6 +71,10 @@ void thread1_func(video_in_base *video_in)
 
 				std::cout << "//=============//" << std::endl;
 			}
+			if (key_code == 's')
+			{
+				video_in->stop();
+			}
 			if (key_code == 'v')
 			{
 				//if ((typeid(*video_in) == typeid(econ_cam)))

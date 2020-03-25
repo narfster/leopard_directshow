@@ -28,6 +28,7 @@ public:
 	directshow();
 	~directshow();
 	void run_graph();
+	void shutdown();
 	void print_camera_cap();
 	void set_camera_format(int capIndex);
 	void setup_graph(std::function<void(uint8_t*, uint32_t)> callback_func);
