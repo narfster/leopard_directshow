@@ -1,6 +1,6 @@
 #pragma once
 #include "video_in_base.h"
-#include <cam_econ/eCAMFwSw.h>
+//#include <cam_econ/eCAMFwSw.h>
 #include "directshow.h"
 #include <iostream>
 #include <sstream>

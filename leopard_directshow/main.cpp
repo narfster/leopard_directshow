@@ -5,7 +5,7 @@
 #include "directshow.h"
 #include "leopard_cam.h"
 #include "video_display.h"
-#include "econ_cam.h"
+//#include "econ_cam.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,10 +73,10 @@ void thread1_func(video_in_base *video_in)
 			}
 			if (key_code == 'v')
 			{
-				if ((typeid(*video_in) == typeid(econ_cam)))
-				{
-					static_cast<econ_cam*>(video_in)->print_firmare_ver();
-				}
+				//if ((typeid(*video_in) == typeid(econ_cam)))
+				//{
+				//	static_cast<econ_cam*>(video_in)->print_firmare_ver();
+				//}
 			}
 
 		}
@@ -122,12 +122,12 @@ int main()
 			video_in->set_format(0);
 			isDeviceFound = true;
 		}
-		else if (deviceList[i].name == L"See3CAM_12CUNIR")
-		{
-			video_in = std::make_unique<econ_cam>(deviceList[i]);
-			video_in->set_format(4); //12
-			isDeviceFound = true;
-		}
+		//else if (deviceList[i].name == L"See3CAM_12CUNIR")
+		//{
+		//	video_in = std::make_unique<econ_cam>(deviceList[i]);
+		//	video_in->set_format(4); //12
+		//	isDeviceFound = true;
+		//}
 		else
 		{
 			

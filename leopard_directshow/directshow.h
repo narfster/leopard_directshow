@@ -4,6 +4,7 @@
 #include "qedit.h"
 #include "SampleGrabberCallback.h"
 #include <vector>
+#include <string>
 
 class directshow
 {

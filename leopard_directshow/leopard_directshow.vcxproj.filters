@@ -47,9 +47,6 @@
     <ClInclude Include="video_display.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="econ_cam.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="directshow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
